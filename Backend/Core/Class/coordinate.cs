@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using NetTopologySuite.Geometries;
 
-namespace ef_core_migration_test.Models;
+namespace Core.Class;
 
 public partial class coordinate
 {
