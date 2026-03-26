@@ -1,9 +1,8 @@
 ﻿using System.Text.Json;
 using NetTopologySuite.Features;
-using NetTopologySuite.Geometries;
 using NetTopologySuite.IO.Converters;
 
-namespace ef_core_migration_test.Models.DTOs;
+namespace Core.Class.DTOs;
 
 public class GeojsonSerializer
 {

@@ -1,8 +1,6 @@
-using ef_core_migration_test.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
-
-
+using Core.Models;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,7 +18,7 @@ var app = builder.Build();
 
 
 app.MapGet("/",(EnergimerkingContext
- dbContext)=> dbContext.energimerkes);
+ dbContext)=> dbContext.Energimerkes);
 
 app.Run();
 // run app

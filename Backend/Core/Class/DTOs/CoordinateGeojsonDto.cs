@@ -1,8 +1,6 @@
-﻿using Core.Class;
-using NetTopologySuite.Features;
-using NetTopologySuite.Geometries;
+﻿using NetTopologySuite.Features;
 
-namespace ef_core_migration_test.Models.DTOs;
+namespace Core.Class.DTOs;
 
 public class CoordinateGeojsonDto
 {
