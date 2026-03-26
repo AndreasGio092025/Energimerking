@@ -1,10 +1,12 @@
+using ef_core_migration_test.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Net;
-using Core.Models;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddControllers();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<EnergimerkingContext>(options =>
     options.UseNpgsql(
@@ -14,6 +16,18 @@ builder.Services.AddDbContext<EnergimerkingContext>(options =>
 );
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.MapControllers();
+
+app.Run();
 
 
 
