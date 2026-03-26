@@ -1,9 +1,10 @@
-﻿using Core.Models;
+﻿using Core.Interface;
+using Core.Models;
 using NetTopologySuite.Features;
 
 namespace Core.Class.DTOs;
 
-public class CoordinateGeojsonDto
+public class CoordinateGeojsonDto : IGeojsonDto
 {
     public Feature feature { get; set; }
     public CoordinateGeojsonDto(Coordinate coordinate)
