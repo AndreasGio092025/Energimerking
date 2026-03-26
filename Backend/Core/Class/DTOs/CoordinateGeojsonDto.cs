@@ -23,4 +23,5 @@ public class CoordinateGeojsonDto
         
         feature = new(point, attributes);
     }
+    
 }
