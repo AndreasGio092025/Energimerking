@@ -1,5 +1,6 @@
 using ef_core_migration_test.Models;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.IO.Converters;
 using System.Net;
 
 
@@ -15,12 +16,19 @@ builder.Services.AddDbContext<EnergimerkingContext>(options =>
     )
 );
 
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new GeoJsonConverterFactory());
+    });
+
 var app = builder.Build();
 
+app.MapControllers();
 
 
-app.MapGet("/",(EnergimerkingContext
- dbContext)=> dbContext.energimerkes);
+
+app.MapGet("/", (EnergimerkingContext dbContext) => dbContext.energimerkes.Take(100).ToList());
 
 app.Run();
 // run app

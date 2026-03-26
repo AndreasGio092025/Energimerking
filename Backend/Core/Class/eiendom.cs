@@ -25,7 +25,11 @@ public partial class eiendom
 
     public int? andelsnummer { get; set; }
 
+    public long? coordinateId { get; set; }
+
     public virtual ICollection<bygning> bygnings { get; set; } = new List<bygning>();
 
     public virtual kommune kommunenummerNavigation { get; set; } = null!;
+
+    public virtual coordinate? coordinateNavigation { get; set; }
 }

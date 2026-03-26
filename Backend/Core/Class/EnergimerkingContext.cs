@@ -84,6 +84,12 @@ public partial class EnergimerkingContext : DbContext
                 .HasForeignKey(d => d.kommunenummer)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("eiendom_kommunenummer_fkey");
+
+            entity.HasOne(d => d.coordinateNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.coordinateId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("eiendom_coordinateId_fkey");
         });
 
         modelBuilder.Entity<energikarakter>(entity =>
