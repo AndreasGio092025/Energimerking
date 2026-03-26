@@ -1,16 +1,17 @@
 ﻿using System.Text.Json;
+using Core.Interface;
 using NetTopologySuite.Features;
 using NetTopologySuite.IO.Converters;
 
 namespace Core.Class.DTOs;
 
-public class GeojsonSerializer
+public class GeojsonSerializer<TDto> where TDto : IGeojsonDto
 {
     public string Json;
 
-    public GeojsonSerializer(List<CoordinateGeojsonDto> coordinateGeojsonDtos)
+    public GeojsonSerializer(List<TDto> dtos)
     {
-        List<Feature> featureList = coordinateGeojsonDtos.Select(coordGeojsonDto => coordGeojsonDto.feature).ToList();
+        List<Feature> featureList = dtos.Select(model => model.feature).ToList();
         var featureCollection = new FeatureCollection();
         featureList.ForEach(feature => featureCollection.Add(feature));
         
