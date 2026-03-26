@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Core.Class.DTOs;
 using Microsoft.EntityFrameworkCore;
 
 namespace Core.Models;
@@ -381,4 +382,12 @@ public partial class EnergimerkingContext : DbContext
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+    
+    public async Task<string> GetAllCoordinateGeojson()
+    {
+        var dbSetList = await Coordinates.ToListAsync();
+        List<CoordinateGeojsonDto> list = dbSetList.Select(item=>new CoordinateGeojsonDto(item)).ToList();
+        var jsonSerializer = new GeojsonSerializer<CoordinateGeojsonDto>(list);
+        return jsonSerializer.Json;
+    }
 }

@@ -1,25 +1,27 @@
 using Core.Class;
-using ef_core_migration_test.Models;
+using Core.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
-using NetTopologySuite.Geometries;
+using Coordinate = NetTopologySuite.Geometries.Coordinate;
 
 namespace WebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class coordinateController : ControllerBase
+    public class CoordinateController : ControllerBase
     {
         private readonly EnergimerkingContext _context;
+        private readonly ILogger<EnergimerkingContext> _logger;
 
-        public coordinateController(EnergimerkingContext context)
+        public CoordinateController(EnergimerkingContext context,ILogger<EnergimerkingContext> logger)
         {
+            _logger = logger;
             _context = context;
         }
 
-        [HttpGet("nearby")]
+        /*[HttpGet("nearby")]
         public async Task<ActionResult<IEnumerable<TestDTO>>> GetNearby(
             double latitude,
             double longitude,
@@ -41,6 +43,23 @@ namespace WebApi.Controllers
                 Longitude = c.geography!.X
             }).ToList();
             return Ok(result);
+        }*/
+        [HttpGet("/alljson")]
+        /* Se navngivningen på denne metoden. */
+        public async Task<IActionResult> GetAllJson(){
+            try
+            {
+                
+                /*List<FeatureCollection> list = await context.GetAllCoordinateGeojson();
+                var json = JsonSerializer.Serialize(list, options);*/
+                return Ok(await _context.GetAllCoordinateGeojson());
+            
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                return StatusCode(500, ex.Message);
+            }
         }
     }
 }

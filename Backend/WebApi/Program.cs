@@ -1,4 +1,4 @@
-using ef_core_migration_test.Models;
+using Core.Models;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
