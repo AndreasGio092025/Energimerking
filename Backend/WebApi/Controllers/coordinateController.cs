@@ -1,5 +1,5 @@
 using Core.Class;
-using ef_core_migration_test.Models;
+using Core.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -29,14 +29,14 @@ namespace WebApi.Controllers
             var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4258);
             var point = factory.CreatePoint(new Coordinate(longitude, latitude)); 
 
-                var data = await _context.coordinates
-                .Where(c => c.geography != null &&
-                            c.geography.IsWithinDistance(point, radiusInMeters))
+                var data = await _context.Coordinates
+                .Where(c => c.Geography != null &&
+                            c.Geography.IsWithinDistance(point, radiusInMeters))
                 .ToListAsync(); 
 
             var result = data.Select(c => new TestDTO
             {
-                Id = c.coordinateid,
+                Id = c.Coordinateid,
                 Latitude = c.geography!.Y,
                 Longitude = c.geography!.X
             }).ToList();
