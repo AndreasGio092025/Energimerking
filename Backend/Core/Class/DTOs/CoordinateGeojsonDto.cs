@@ -1,35 +1,47 @@
-﻿using Core.Interface;
-using Core.Models;
+﻿using Core.Models;
 using NetTopologySuite.Features;
+using NetTopologySuite.Geometries;
 
 namespace Core.Class.DTOs;
 
-public class CoordinateGeojsonDto : IGeojsonDto
+public class CoordinateGeojsonDto
 {
-    public Feature feature { get; set; }
-    public CoordinateGeojsonDto(Coordinate coordinate)
+    public Feature Feature { get; }
+
+    public CoordinateGeojsonDto(VByggMedKoordinater dto)
     {
-        var id = coordinate.Coordinateid;
-        var latitude = coordinate.Geography.X;
-        var longitude = coordinate.Geography.Y;
-        var point = coordinate.Geography;
-        var epsg = coordinate.Geography.SRID;
-        var matrikkelKey = coordinate.MatrikkelNøkkel;
-        var kommuneNr = coordinate.Kommunenummer;
-        var gaardNr = coordinate.Gaardsnummer;
-        var brukNr = coordinate.Bruksnummer;
+        if (dto == null)
+            throw new ArgumentNullException(nameof(dto));
+
+        if (dto.Geography == null)
+            throw new ArgumentException("Geometri (Geography) mangler i VByggMedKoordinater.", nameof(dto));
+
+        // Opprett attributter
+        var attributes = new AttributesTable
+        {
+            { "CoordinateId", dto.Coordinateid },
+            { "Bygningsnummer", dto.Bygningsnummer },
+            { "Bruksnummmer",  dto.Bruksnummer },
+            { "Adresse", dto.Adresse },
+            { "Postnummer", dto.Postnummer },
+            { "Poststed", dto.Poststed },
+            { "Kommunenavn", dto.Kommunenavn },
+            { "EPSG", dto.Geography.SRID },
+            { "Latitude", dto.Latitude },          
+            { "Longitude", dto.Longitude },        
+
+           
+            { "Energikarakter", dto.Energikarakter },
+            { "EnergikarakterBeskrivelse", dto.EnergikarakterBeskrivelse },
+            { "Oppvarmingskarakter", dto.Oppvarmingskarakter },
+            { "EnergibrukKwhM2", dto.EnergibrukKwhM2 },
+            { "BeregnetFossilandel", dto.BeregnetFossilandel },
+            { "HarEnergivurdering", dto.HarEnergivurdering ?? false },
+            { "EnergivurderingDato", dto.EnergivurderingDato?.ToString("yyyy-MM-dd") },
+            { "Kilde", dto.Kilde }
+        };
+
         
-        var attributes = new AttributesTable();
-        attributes.Add("CoordinateId", id);
-        attributes.Add("EPSG(SRID)", epsg);
-        attributes.Add("Latitude", latitude);
-        attributes.Add("Longitude", longitude);
-        attributes.Add("Matrikkelnøkkel",matrikkelKey);
-        attributes.Add("Kommunenummer",kommuneNr);
-        attributes.Add("Gaardnummer", gaardNr);
-        attributes.Add("Bruknummer", brukNr);
-        
-        feature = new(point, attributes);
+        Feature = new Feature(dto.Geography, attributes);
     }
-    
 }

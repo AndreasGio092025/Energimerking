@@ -27,12 +27,11 @@ app.UseHttpsRedirection();
 
 app.MapControllers();
 
-app.Run();
-
-
-
 app.MapGet("/",(EnergimerkingContext
  dbContext)=> dbContext.Energimerkes);
 
+
 app.Run();
-// run app
+
+
+
