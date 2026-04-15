@@ -18,7 +18,7 @@ public partial class EnergimerkingContext : DbContext
 
     public virtual DbSet<Bygning> Bygnings { get; set; }
 
-    public virtual DbSet<Coordinate> Coordinates { get; set; }
+    public virtual DbSet<Coordinate> coordinates { get; set; }
 
     public virtual DbSet<CoordinatesRaw> CoordinatesRaws { get; set; }
 
@@ -385,7 +385,7 @@ public partial class EnergimerkingContext : DbContext
     
     public async Task<string> GetAllCoordinateGeojson()
     {
-        var dbSetList = await Coordinates.ToListAsync();
+        var dbSetList = await coordinates.Where(c => c.Kommunenummer != null && c.Geography != null).ToListAsync();
         List<CoordinateGeojsonDto> list = dbSetList.Select(item=>new CoordinateGeojsonDto(item)).ToList();
         var jsonSerializer = new GeojsonSerializer<CoordinateGeojsonDto>(list);
         return jsonSerializer.Json;

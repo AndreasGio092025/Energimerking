@@ -1,3 +1,4 @@
+using System.Text;
 using Core.Class;
 using Core.Models;
 using Microsoft.AspNetCore.Http;
@@ -52,7 +53,9 @@ namespace WebApi.Controllers
                 
                 /*List<FeatureCollection> list = await context.GetAllCoordinateGeojson();
                 var json = JsonSerializer.Serialize(list, options);*/
-                return Ok(await _context.GetAllCoordinateGeojson());
+                string json = await _context.GetAllCoordinateGeojson();
+                var byteCount = Encoding.UTF8.GetByteCount(json);
+                return Ok(json);
             
             }
             catch(Exception ex)
