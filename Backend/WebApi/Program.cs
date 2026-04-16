@@ -1,6 +1,11 @@
 using Core.Models;
 using Microsoft.EntityFrameworkCore;
 
+System.Globalization.CultureInfo.DefaultThreadCurrentCulture = 
+    System.Globalization.CultureInfo.InvariantCulture;
+System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = 
+    System.Globalization.CultureInfo.InvariantCulture;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -17,18 +22,21 @@ builder.Services.AddDbContext<EnergimerkingContext>(options =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
+
+
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+
+
+app.UseStaticFiles();
+app.UseDefaultFiles();
 
 app.UseHttpsRedirection();
 
+
 app.MapControllers();
 
-app.MapGet("/",(EnergimerkingContext
- dbContext)=> dbContext.Energimerkes);
+
 
 
 app.Run();
