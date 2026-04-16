@@ -64,5 +64,25 @@ namespace WebApi.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+        
+        [HttpGet("/amountjson/{amount}")]
+        /* Se navngivningen på denne metoden. */
+        public async Task<IActionResult> GetAmountJson(int amount){
+            try
+            {
+                
+                /*List<FeatureCollection> list = await context.GetAllCoordinateGeojson();
+                var json = JsonSerializer.Serialize(list, options);*/
+                string json = await _context.GetAmountCoordinateGeojson(amount);
+                var byteCount = Encoding.UTF8.GetByteCount(json);
+                return Ok(json);
+            
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                return StatusCode(500, ex.Message);
+            }
+        }
     }
 }
