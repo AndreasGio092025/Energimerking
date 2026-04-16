@@ -1,12 +1,13 @@
-﻿using Core.Models;
+﻿using Core.Interface;
+using Core.Models;
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 
 namespace Core.Class.DTOs;
 
-public class CoordinateGeojsonDto
+public class CoordinateGeojsonDto : IGeojsonDto
 {
-    public Feature Feature { get; }
+    public Feature feature { get; set; }
 
     public CoordinateGeojsonDto(VByggMedKoordinater dto)
     {
@@ -42,6 +43,8 @@ public class CoordinateGeojsonDto
         };
 
         
-        Feature = new Feature(dto.Geography, attributes);
+        feature = new Feature(dto.Geography, attributes);
     }
+
+    
 }
