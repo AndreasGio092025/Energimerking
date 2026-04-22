@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using NetTopologySuite;
+using Coordinate = Core.Models.Coordinate;
 
 namespace WebApi.Controllers
 {
@@ -12,12 +13,33 @@ namespace WebApi.Controllers
     public class ByggController : ControllerBase
     {
         private readonly EnergimerkingContext _context;
+        private readonly EnergimerkingService _service;
 
-        public ByggController(EnergimerkingContext context)
+        public ByggController(EnergimerkingContext context,EnergimerkingService service)
         {
             _context = context;
+            _service = service;
         }
+        /// <summary>
+        /// IKKE TESTET
+        /// Henter ut gitt mengde med koordinater som har flere eiendoms-modeller knyttet til seg.
+        /// </summary>
+        /// <param name="amount">antall</param>
+        /// <returns></returns>
+        [HttpGet("get_many_in_one_geojson")]
+        public async Task<IActionResult> getManyInOneGeoJson(int amount)
+        {
+            List<Coordinate> coordinates = await _context.Coordinates.Where(c => c.Kommunenummer != null && c.Geography != null).Take(amount).ToListAsync();
+           
+            foreach (var coord in coordinates)
+            {
+                
+            }
 
+            string jsonString = await _service.GetAmountCoordinateGeojson(amount);
+            
+            return Ok(jsonString);
+        }
         
         
         [HttpGet("geojson")]

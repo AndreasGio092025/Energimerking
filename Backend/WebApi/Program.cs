@@ -19,10 +19,13 @@ builder.Services.AddDbContext<EnergimerkingContext>(options =>
         o => o.UseNetTopologySuite()
     )
 );
+//Feil(Scope ettelnoannet)
+//builder.Services.AddSingleton<EnergimerkingService>();
+
+//Ingen feil med denne, men vet ikke om det fungerer.
+builder.Services.AddDbContextFactory<EnergimerkingService>();
 
 var app = builder.Build();
-
-
 
     app.UseSwagger();
     app.UseSwaggerUI();
