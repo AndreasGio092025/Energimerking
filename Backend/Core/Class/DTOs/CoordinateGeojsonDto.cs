@@ -8,7 +8,7 @@ namespace Core.Class.DTOs;
 
 public class CoordinateGeojsonDto : IGeojsonDto
 {
-    public Feature feature { get; set; }
+    public Feature Feature { get; set; }
     public CoordinateGeojsonDto(Coordinate coordinate)
     {
         var id = coordinate.Coordinateid;
@@ -31,7 +31,7 @@ public class CoordinateGeojsonDto : IGeojsonDto
         attributes.Add("Gaardnummer", gaardNr);
         attributes.Add("Bruknummer", brukNr);
         
-        feature = new(point, attributes);
+        Feature = new(point, attributes);
     }
 
     

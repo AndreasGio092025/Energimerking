@@ -11,7 +11,7 @@ namespace Core.Class.DTOs;
 
 public class FlereEiendommerEttKoordGeojsonDto : IGeojsonDto
 {
-    public Feature feature { get; set; }
+    public Feature Feature { get; set; }
 
     public FlereEiendommerEttKoordGeojsonDto(Coordinate coord, List<Eiendom> eiendommer)
     {
@@ -38,6 +38,6 @@ public class FlereEiendommerEttKoordGeojsonDto : IGeojsonDto
         attributes.Add("Bruknummer", brukNr);
         attributes.Add("Eiendommer",eiendomsIdListe);
         
-        feature = new(point, attributes);
+        Feature = new(point, attributes);
     }
 }

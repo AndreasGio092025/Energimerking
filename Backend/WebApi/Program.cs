@@ -23,7 +23,7 @@ builder.Services.AddDbContext<EnergimerkingContext>(options =>
 //builder.Services.AddSingleton<EnergimerkingService>();
 
 //Ingen feil med denne, men vet ikke om det fungerer.
-builder.Services.AddDbContextFactory<EnergimerkingService>();
+//builder.Services.AddDbContextFactory<EnergimerkingService>();
 
 var app = builder.Build();
 

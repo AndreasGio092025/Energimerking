@@ -1,3 +1,4 @@
+using Core.Class.DTOs;
 using Core.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,15 +14,17 @@ namespace WebApi.Controllers
     public class ByggController : ControllerBase
     {
         private readonly EnergimerkingContext _context;
-        private readonly EnergimerkingService _service;
+        //private readonly EnergimerkingService _service;
+        private ILogger<EnergimerkingContext> _logger;
 
-        public ByggController(EnergimerkingContext context,EnergimerkingService service)
+        //Om det dukker opp feil se på constructoren. 
+        public ByggController(EnergimerkingContext context)
         {
             _context = context;
-            _service = service;
+            //_service = service;
         }
-        /// <summary>
-        /// IKKE TESTET
+        /*/// <summary>
+        /// FUNGERER IKKE
         /// Henter ut gitt mengde med koordinater som har flere eiendoms-modeller knyttet til seg.
         /// </summary>
         /// <param name="amount">antall</param>
@@ -30,7 +33,6 @@ namespace WebApi.Controllers
         public async Task<IActionResult> getManyInOneGeoJson(int amount)
         {
             List<Coordinate> coordinates = await _context.Coordinates.Where(c => c.Kommunenummer != null && c.Geography != null).Take(amount).ToListAsync();
-           
             foreach (var coord in coordinates)
             {
                 
@@ -39,7 +41,7 @@ namespace WebApi.Controllers
             string jsonString = await _service.GetAmountCoordinateGeojson(amount);
             
             return Ok(jsonString);
-        }
+        }*/
         
         
         [HttpGet("geojson")]
@@ -138,6 +140,26 @@ namespace WebApi.Controllers
             {
                 return StatusCode(500, $"Feil ved søk: {ex.Message}");
             }
+        }
+        
+        [HttpGet("getamount_geojson")]
+        public async Task<IActionResult> GetAmountGeojson(int amount)
+        {
+            string jsonString = null;
+            try
+            {
+                var dbSetList = await _context.VByggMedKoordinaters.Where(c => c.Kommunenummer != null && c.Geography != null).Take(amount).ToListAsync();
+                List<VByggMedKoordinaterGeojsonDto> list = dbSetList.Select(item=>new VByggMedKoordinaterGeojsonDto(item)).ToList();
+                var jsonSerializer = new GeojsonSerializer<VByggMedKoordinaterGeojsonDto>(list);
+                jsonString = jsonSerializer.Json;
+                
+            }
+            catch(Exception ex)
+            {
+                //_logger.LogError(ex.Message);
+                return StatusCode(500, ex.Message);
+            }
+            return Ok(jsonString);
         }
 
         //laget view får ikke koblet til gir 500 error

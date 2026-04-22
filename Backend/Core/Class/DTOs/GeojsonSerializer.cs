@@ -20,7 +20,7 @@ public class GeojsonSerializer<TDto> where TDto : IGeojsonDto
     /// <param name="dtos">Listen med Dtoene som har features på seg.</param>
     public GeojsonSerializer(List<TDto> dtos)
     {
-        List<Feature> featureList = dtos.Select(model => model.feature).ToList();
+        List<Feature> featureList = dtos.Select(model => model.Feature).ToList();
         var featureCollection = new FeatureCollection();
         featureList.ForEach(feature => featureCollection.Add(feature));
         
