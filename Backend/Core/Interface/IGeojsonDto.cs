@@ -6,5 +6,5 @@ namespace Core.Interface;
 /// </summary>
 public interface IGeojsonDto
 {
-    public Feature feature { get; set; }
+    public Feature Feature { get; set; }
 }
