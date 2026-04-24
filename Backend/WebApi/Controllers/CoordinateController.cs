@@ -102,6 +102,63 @@ namespace WebApi.Controllers
         }
 
        
+        [HttpGet("nearby/geojson=r:{radiusInMeters}amount:{amount}lat:{latitude}lon:{longitude}")]
+        public async Task<ActionResult<IEnumerable<object>>> GetNearbyGeoJson(
+            double latitude,
+            double longitude,
+            int amount,
+            double radiusInMeters = 5000)
+        {
+            if (radiusInMeters <= 0 || radiusInMeters > 50000)
+            {
+                return BadRequest("Radius må være mellom 1 og 50 000 meter.");
+            }
+
+            try
+            {
+                var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4258);
+
+      
+                var searchPoint = factory.CreatePoint(
+                new NetTopologySuite.Geometries.Coordinate(longitude, latitude)
+                );
+
+                List<Feature> featureList = new(); 
+
+                var coordinates = await _context.Coordinates
+                    .Where(c => c.Geography != null)
+                    .Where(c => c.Geography.IsWithinDistance(searchPoint, radiusInMeters))
+                    .Take(amount)
+                    .ToListAsync();
+                
+                List<Eiendom> eiendomsListe = new();
+                // Samler inn alle eiendoms modellene som er knyttet til koordinatene som er i listen fra utspørring.
+                foreach (var item in coordinates)
+                {
+                    var eiendom = await _context.Eiendoms.Where(e => e.Coordinateid == item.Coordinateid).ToListAsync();
+                    if (eiendom != null)
+                    {
+                        eiendomsListe.AddRange(eiendom);
+                    }
+                }
+                //Hvis det er mer enn en eiendom som har relasjon til samme koordinat blir det lagt inn i denne listen.
+                /*List<Eiendom> filtrertEiendomsListe = eiendomsListe.GroupBy(e => e.Coordinateid)
+                    .Where(group => group.Count() > 1)
+                    .SelectMany(group => group)
+                    .ToList();*/
+
+                var dtoList = coordinates.Select(item => new FlereEiendommerEttKoordGeojsonDto(item, eiendomsListe))
+                    .ToList();
+                var jsonSerializer = new GeojsonSerializer<FlereEiendommerEttKoordGeojsonDto>(dtoList);
+
+                return Ok(jsonSerializer.Json);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Feil ved søk: {ex.Message}");
+            }
+        }
+        
         [HttpGet("nearby")]
         public async Task<ActionResult<IEnumerable<object>>> GetNearby(
             double latitude,
@@ -115,12 +172,12 @@ namespace WebApi.Controllers
 
             try
             {
-               var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4258);
+                var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4258);
 
       
-            var searchPoint = factory.CreatePoint(
-            new NetTopologySuite.Geometries.Coordinate(longitude, latitude)
-        );
+                var searchPoint = factory.CreatePoint(
+                    new NetTopologySuite.Geometries.Coordinate(longitude, latitude)
+                );
 
                 var data = await _context.Coordinates
                     .Where(c => c.Geography != null)

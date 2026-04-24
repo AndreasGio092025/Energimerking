@@ -25,7 +25,8 @@ public class FlereEiendommerEttKoordGeojsonDto : IGeojsonDto
         var gaardNr = coord.Gaardsnummer;
         var brukNr = coord.Bruksnummer;
         
-        var eiendomsIdListe = eiendommer.Select(e => e.EiendomId).ToList();
+        var eiendomsIdListe = eiendommer.Where(e => e.Coordinateid == coord.Coordinateid)
+            .Select(e => e.EiendomId).ToList();
         
         var attributes = new AttributesTable();
         attributes.Add("CoordinateId", id);
