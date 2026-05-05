@@ -14,17 +14,17 @@ namespace WebApi.Controllers
     public class ByggController : ControllerBase
     {
         private readonly EnergimerkingContext _context;
-        //private readonly EnergimerkingService _service;
+        private readonly EnergimerkingService _service;
         private ILogger<EnergimerkingContext> _logger;
 
         //Om det dukker opp feil se på constructoren. 
-        public ByggController(EnergimerkingContext context)
+        public ByggController(EnergimerkingContext context, EnergimerkingService service)
         {
             _context = context;
-            //_service = service;
+            _service = service;
         }
-        /*/// <summary>
-        /// FUNGERER IKKE
+        /// <summary>
+        /// IKKE FERDIG
         /// Henter ut gitt mengde med koordinater som har flere eiendoms-modeller knyttet til seg.
         /// </summary>
         /// <param name="amount">antall</param>
@@ -41,7 +41,7 @@ namespace WebApi.Controllers
             string jsonString = await _service.GetAmountCoordinateGeojson(amount);
             
             return Ok(jsonString);
-        }*/
+        }
         
         
         [HttpGet("geojson")]
@@ -102,6 +102,52 @@ namespace WebApi.Controllers
         }
 
        
+        [HttpGet("nearby/geojson=r:{radiusInMeters}amount:{amount}lat:{latitude}lon:{longitude}")]
+        public async Task<IActionResult> GetNearbyGeoJson(
+            double latitude,
+            double longitude,
+            int amount,
+            double radiusInMeters = 5000)
+        {
+            if (radiusInMeters <= 0 || radiusInMeters > 50000)
+            {
+                return BadRequest("Radius må være mellom 1 og 50 000 meter.");
+            }
+
+            try
+            {
+                /*var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4258);
+
+      
+                var searchPoint = factory.CreatePoint(
+                new NetTopologySuite.Geometries.Coordinate(longitude, latitude)
+                );*/
+                
+                //Finner koordinater innenfor søkepunktet, og
+                //returnerer en utspørringsliste med koordinat som nøkkel og en utspørringsliste med eiendommer som er knyttet til nøkkelen.
+                /*var coordinates = _context.Coordinates
+                    .Where(c =>
+                        c.Geography != null &&
+                        c.Geography.IsWithinDistance(searchPoint, radiusInMeters)
+                    )
+                    .Take(amount)
+                    .GroupBy(c => c, value => _context.Coordinates.SelectMany(c_inner =>
+                        _context.Eiendoms.Where(e => e.Coordinateid == c_inner.Coordinateid)));
+                
+                var dtoList = await coordinates.Select(item =>
+                    new FlereEiendommerEttKoordGeojsonDto(item.Key, item.SelectMany(i => i))).ToListAsync();
+                
+                var jsonSerializer = new GeojsonSerializer<FlereEiendommerEttKoordGeojsonDto>(dtoList);*/
+                string jsonString = await _service.GetNearbyGeoJson(latitude, longitude, amount, radiusInMeters);
+
+                return Ok(jsonString);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Feil ved søk: {ex.Message}");
+            }
+        }
+        
         [HttpGet("nearby")]
         public async Task<ActionResult<IEnumerable<object>>> GetNearby(
             double latitude,
@@ -115,12 +161,12 @@ namespace WebApi.Controllers
 
             try
             {
-               var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4258);
+                var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4258);
 
       
-            var searchPoint = factory.CreatePoint(
-            new NetTopologySuite.Geometries.Coordinate(longitude, latitude)
-        );
+                var searchPoint = factory.CreatePoint(
+                    new NetTopologySuite.Geometries.Coordinate(longitude, latitude)
+                );
 
                 var data = await _context.Coordinates
                     .Where(c => c.Geography != null)

@@ -13,7 +13,7 @@ public class FlereEiendommerEttKoordGeojsonDto : IGeojsonDto
 {
     public Feature Feature { get; set; }
 
-    public FlereEiendommerEttKoordGeojsonDto(Coordinate coord, List<Eiendom> eiendommer)
+    public FlereEiendommerEttKoordGeojsonDto(Coordinate coord, IEnumerable<Eiendom> eiendommer)
     {
         var id = coord.Coordinateid;
         var latitude = coord.Geography.X;
@@ -25,7 +25,8 @@ public class FlereEiendommerEttKoordGeojsonDto : IGeojsonDto
         var gaardNr = coord.Gaardsnummer;
         var brukNr = coord.Bruksnummer;
         
-        var eiendomsIdListe = eiendommer.Select(e => e.EiendomId).ToList();
+        var eiendomsIdListe = eiendommer.Where(e => e.Coordinateid == coord.Coordinateid)
+            .Select(e => e.EiendomId).ToList();
         
         var attributes = new AttributesTable();
         attributes.Add("CoordinateId", id);

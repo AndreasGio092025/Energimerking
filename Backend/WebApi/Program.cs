@@ -3,8 +3,6 @@ using Microsoft.EntityFrameworkCore;
 
 System.Globalization.CultureInfo.DefaultThreadCurrentCulture = 
     System.Globalization.CultureInfo.InvariantCulture;
-System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = 
-    System.Globalization.CultureInfo.InvariantCulture;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,11 +17,8 @@ builder.Services.AddDbContext<EnergimerkingContext>(options =>
         o => o.UseNetTopologySuite()
     )
 );
-//Feil(Scope ettelnoannet)
-//builder.Services.AddSingleton<EnergimerkingService>();
 
-//Ingen feil med denne, men vet ikke om det fungerer.
-//builder.Services.AddDbContextFactory<EnergimerkingService>();
+builder.Services.AddTransient<EnergimerkingService>();
 
 var app = builder.Build();
 
