@@ -13,7 +13,7 @@ public class FlereEiendommerEttKoordGeojsonDto : IGeojsonDto
 {
     public Feature Feature { get; set; }
 
-    public FlereEiendommerEttKoordGeojsonDto(Coordinate coord, List<Eiendom> eiendommer)
+    public FlereEiendommerEttKoordGeojsonDto(Coordinate coord, IEnumerable<Eiendom> eiendommer)
     {
         var id = coord.Coordinateid;
         var latitude = coord.Geography.X;

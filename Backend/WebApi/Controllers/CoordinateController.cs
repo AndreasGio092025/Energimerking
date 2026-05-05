@@ -14,17 +14,17 @@ namespace WebApi.Controllers
     public class ByggController : ControllerBase
     {
         private readonly EnergimerkingContext _context;
-        //private readonly EnergimerkingService _service;
+        private readonly EnergimerkingService _service;
         private ILogger<EnergimerkingContext> _logger;
 
         //Om det dukker opp feil se på constructoren. 
-        public ByggController(EnergimerkingContext context)
+        public ByggController(EnergimerkingContext context, EnergimerkingService service)
         {
             _context = context;
-            //_service = service;
+            _service = service;
         }
-        /*/// <summary>
-        /// FUNGERER IKKE
+        /// <summary>
+        /// IKKE FERDIG
         /// Henter ut gitt mengde med koordinater som har flere eiendoms-modeller knyttet til seg.
         /// </summary>
         /// <param name="amount">antall</param>
@@ -41,7 +41,7 @@ namespace WebApi.Controllers
             string jsonString = await _service.GetAmountCoordinateGeojson(amount);
             
             return Ok(jsonString);
-        }*/
+        }
         
         
         [HttpGet("geojson")]
@@ -103,7 +103,7 @@ namespace WebApi.Controllers
 
        
         [HttpGet("nearby/geojson=r:{radiusInMeters}amount:{amount}lat:{latitude}lon:{longitude}")]
-        public async Task<ActionResult<IEnumerable<object>>> GetNearbyGeoJson(
+        public async Task<IActionResult> GetNearbyGeoJson(
             double latitude,
             double longitude,
             int amount,
@@ -116,42 +116,31 @@ namespace WebApi.Controllers
 
             try
             {
-                var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4258);
+                /*var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4258);
 
       
                 var searchPoint = factory.CreatePoint(
                 new NetTopologySuite.Geometries.Coordinate(longitude, latitude)
-                );
-
-                List<Feature> featureList = new(); 
-
-                var coordinates = await _context.Coordinates
-                    .Where(c => c.Geography != null)
-                    .Where(c => c.Geography.IsWithinDistance(searchPoint, radiusInMeters))
-                    .Take(amount)
-                    .ToListAsync();
+                );*/
                 
-                List<Eiendom> eiendomsListe = new();
-                // Samler inn alle eiendoms modellene som er knyttet til koordinatene som er i listen fra utspørring.
-                foreach (var item in coordinates)
-                {
-                    var eiendom = await _context.Eiendoms.Where(e => e.Coordinateid == item.Coordinateid).ToListAsync();
-                    if (eiendom != null)
-                    {
-                        eiendomsListe.AddRange(eiendom);
-                    }
-                }
-                //Hvis det er mer enn en eiendom som har relasjon til samme koordinat blir det lagt inn i denne listen.
-                /*List<Eiendom> filtrertEiendomsListe = eiendomsListe.GroupBy(e => e.Coordinateid)
-                    .Where(group => group.Count() > 1)
-                    .SelectMany(group => group)
-                    .ToList();*/
+                //Finner koordinater innenfor søkepunktet, og
+                //returnerer en utspørringsliste med koordinat som nøkkel og en utspørringsliste med eiendommer som er knyttet til nøkkelen.
+                /*var coordinates = _context.Coordinates
+                    .Where(c =>
+                        c.Geography != null &&
+                        c.Geography.IsWithinDistance(searchPoint, radiusInMeters)
+                    )
+                    .Take(amount)
+                    .GroupBy(c => c, value => _context.Coordinates.SelectMany(c_inner =>
+                        _context.Eiendoms.Where(e => e.Coordinateid == c_inner.Coordinateid)));
+                
+                var dtoList = await coordinates.Select(item =>
+                    new FlereEiendommerEttKoordGeojsonDto(item.Key, item.SelectMany(i => i))).ToListAsync();
+                
+                var jsonSerializer = new GeojsonSerializer<FlereEiendommerEttKoordGeojsonDto>(dtoList);*/
+                string jsonString = await _service.GetNearbyGeoJson(latitude, longitude, amount, radiusInMeters);
 
-                var dtoList = coordinates.Select(item => new FlereEiendommerEttKoordGeojsonDto(item, eiendomsListe))
-                    .ToList();
-                var jsonSerializer = new GeojsonSerializer<FlereEiendommerEttKoordGeojsonDto>(dtoList);
-
-                return Ok(jsonSerializer.Json);
+                return Ok(jsonString);
             }
             catch (Exception ex)
             {
