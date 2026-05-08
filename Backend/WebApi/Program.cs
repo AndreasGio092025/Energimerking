@@ -18,7 +18,7 @@ builder.Services.AddDbContext<EnergimerkingContext>(options =>
     )
 );
 
-builder.Services.AddTransient<EnergimerkingService>();
+builder.Services.AddScoped<EnergimerkingService>();
 
 var app = builder.Build();
 
