@@ -34,7 +34,6 @@ public class EnergimerkingService(EnergimerkingContext context) : DbContext
     /// <summary>
     /// Lager et geografisk punkt som blir brukt til å gjøre utspørringer etter koordinater innenfor
     /// radiusen bruker gir og setter sammen eiendommene med koordinater.
-    /// MERK! Fungerer ikke optimalt. Vil gi feilmeldinger om utspørringen til databasen tar lang tid.
     /// </summary>
     /// <param name="latitude">breddegrad</param>
     /// <param name="longitude">lengdegrad</param>
@@ -62,21 +61,19 @@ public class EnergimerkingService(EnergimerkingContext context) : DbContext
             );
             
             //Finner koordinater innenfor søkepunktet, og
-            //returnerer en utspørringsliste med koordinat som nøkkel og en utspørringsliste med eiendommer som
-            //er knyttet til nøkkelen.
-            var coordinates = context.Coordinates
+            //for hvert koordinat blir det lagd en FlereEiendommerEttKoordGeojsonDto som knytter eiendommer
+            //med koordinater.
+            var coordGeoJsonDtos = await context.Coordinates
                 .Where(c =>
                     c.Geography != null &&
                     c.Geography.IsWithinDistance(searchPoint, radiusInMeters)
                 )
                 .Take(amount)
-                .GroupBy(c => c, value => context.Coordinates.SelectMany(c_inner =>
-                    context.Eiendoms.Where(e => e.Coordinateid == c_inner.Coordinateid)));
+                .Select(c => new FlereEiendommerEttKoordGeojsonDto(c, context.Eiendoms
+                    .Where(e => e.Coordinateid == c.Coordinateid).ToList()))
+                .ToListAsync();
 
-            var dtoList = await coordinates.Select(item =>
-                new FlereEiendommerEttKoordGeojsonDto(item.Key, item.SelectMany(i => i))).ToListAsync();
-
-            var jsonSerializer = new GeojsonSerializer<FlereEiendommerEttKoordGeojsonDto>(dtoList);
+            var jsonSerializer = new GeojsonSerializer<FlereEiendommerEttKoordGeojsonDto>(coordGeoJsonDtos);
 
             return jsonSerializer.Json;
         }
