@@ -1,4 +1,5 @@
-﻿using Core.Interface;
+﻿/* Alt kommentert ut
+using Core.Interface;
 using Core.Models;
 using NetTopologySuite.Features;
 
@@ -25,4 +26,4 @@ public class VByggMedKoordinaterGeojsonDto : IGeojsonDto
         
         Feature = new Feature(byggMedKoordinater.Geography,attributes);
     }
-}
+}*/

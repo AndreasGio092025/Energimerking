@@ -1,5 +1,6 @@
 using Core.Models;
 using Microsoft.EntityFrameworkCore;
+using EnergimerkingContext = Core.DbContexts.EnergimerkingContext;
 
 System.Globalization.CultureInfo.DefaultThreadCurrentCulture = 
     System.Globalization.CultureInfo.InvariantCulture;

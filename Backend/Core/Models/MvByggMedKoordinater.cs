@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Core.Models;
 
-public partial class VByggMedKoordinater
+public partial class MvByggMedKoordinater
 {
     public string? Attestnummer { get; set; }
 
@@ -44,6 +44,4 @@ public partial class VByggMedKoordinater
     public double? Latitude { get; set; }
 
     public double? Longitude { get; set; }
-
-    public string? KoordinatStatus { get; set; }
 }

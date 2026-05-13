@@ -16,9 +16,17 @@ public partial class Coordinate
 
     public string? MatrikkelNøkkel { get; set; }
 
-    public int? Kommunenummer { get; set; }
+    public string? Kommunenummer { get; set; }
 
     public int? Gaardsnummer { get; set; }
 
     public int? Bruksnummer { get; set; }
+
+    public string Lokalid { get; set; } = null!;
+
+    public string? Adresse { get; set; }
+
+    public virtual ICollection<EiendomBygning> EiendomBygnings { get; set; } = new List<EiendomBygning>();
+
+    public virtual ICollection<Eiendom> Eiendoms { get; set; } = new List<Eiendom>();
 }

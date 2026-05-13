@@ -3,10 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
 using NetTopologySuite.Features;
+using EnergimerkingContext = Core.DbContexts.EnergimerkingContext;
 
 namespace Core.Models;
 
-public class EnergimerkingService(EnergimerkingContext context) : DbContext
+public class EnergimerkingService(DbContexts.EnergimerkingContext context) : DbContext
 {
     /// <summary>
     /// Looks at every coordinate, filtering out any that doesn't have "Kommunenummer" or Geography.

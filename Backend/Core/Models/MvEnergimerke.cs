@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Core.Models;
 
-public partial class VByggMedKoordinater
+public partial class MvEnergimerke
 {
     public string? Attestnummer { get; set; }
 
@@ -19,8 +19,6 @@ public partial class VByggMedKoordinater
 
     public string? Bygningsnummer { get; set; }
 
-    public long? BygningId { get; set; }
-
     public string? Bygningskategori { get; set; }
 
     public short? Byggeaar { get; set; }
@@ -33,17 +31,15 @@ public partial class VByggMedKoordinater
 
     public int? Gaardsnummer { get; set; }
 
-    public int? Festenummer { get; set; }
+    public int? Bruksnummer { get; set; }
+
+    public string? Kommunenummer { get; set; }
 
     public string? Postnummer { get; set; }
 
     public string? Poststed { get; set; }
 
-    public long? Coordinateid { get; set; }
+    public decimal? Latitude { get; set; }
 
-    public double? Latitude { get; set; }
-
-    public double? Longitude { get; set; }
-
-    public string? KoordinatStatus { get; set; }
+    public decimal? Longitude { get; set; }
 }

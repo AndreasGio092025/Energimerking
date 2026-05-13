@@ -6,6 +6,7 @@ using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using NetTopologySuite;
 using Coordinate = Core.Models.Coordinate;
+using EnergimerkingContext = Core.DbContexts.EnergimerkingContext;
 
 namespace WebApi.Controllers
 {
@@ -44,7 +45,7 @@ namespace WebApi.Controllers
         }
         
         
-        [HttpGet("geojson")]
+        /*[HttpGet("geojson")]
         public async Task<IActionResult> GetGeoJson(int limit = 8000)
         {
             var data = await _context.VByggMedKoordinaters
@@ -99,7 +100,7 @@ namespace WebApi.Controllers
             };
 
             return Ok(geoJson);
-        }
+        }*/
 
        
         [HttpGet("nearby/geojson")]
@@ -188,7 +189,7 @@ namespace WebApi.Controllers
             }
         }
         
-        [HttpGet("getamount_geojson")]
+        /*[HttpGet("getamount_geojson")]
         public async Task<IActionResult> GetAmountGeojson(int amount)
         {
             string jsonString = null;
@@ -206,7 +207,7 @@ namespace WebApi.Controllers
                 return StatusCode(500, ex.Message);
             }
             return Ok(jsonString);
-        }
+        }*/
 
         //laget view får ikke koblet til gir 500 error
         [HttpPost("refresh")]

@@ -7,7 +7,7 @@ public partial class Energimerke
 {
     public string Attestnummer { get; set; } = null!;
 
-    public string Bygningsnummer { get; set; } = null!;
+    public string? Bygningsnummer { get; set; }
 
     public DateOnly Utstedelsesdato { get; set; }
 
@@ -19,21 +19,17 @@ public partial class Energimerke
 
     public decimal? BeregnetEnergiKwhM2 { get; set; }
 
-    public decimal? BeregnetFossilandel { get; set; }
-
     public bool HarEnergivurdering { get; set; }
 
     public DateOnly? EnergivurderingDato { get; set; }
 
     public string? Kilde { get; set; }
 
-    public DateOnly? GyldigFra { get; set; }
+    public decimal? BeregnetFossilandel { get; set; }
 
-    public DateOnly? GyldigTil { get; set; }
+    public long? BygningeiendomId { get; set; }
 
-    public virtual Bygning BygningsnummerNavigation { get; set; } = null!;
+    public virtual EiendomBygning? Bygningeiendom { get; set; }
 
     public virtual Energikarakter EnergikarakterNavigation { get; set; } = null!;
-
-    public virtual Oppvarmingskarakter OppvarmingskarakterNavigation { get; set; } = null!;
 }
