@@ -102,7 +102,7 @@ namespace WebApi.Controllers
         }
 
        
-        [HttpGet("nearby/geojson=r:{radiusInMeters}amount:{amount}lat:{latitude}lon:{longitude}")]
+        [HttpGet("nearby/geojson")]
         public async Task<IActionResult> GetNearbyGeoJson(
             double latitude,
             double longitude,

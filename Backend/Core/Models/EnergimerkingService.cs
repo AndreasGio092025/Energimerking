@@ -1,4 +1,5 @@
 ﻿using Core.Class.DTOs;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
 using NetTopologySuite.Features;
@@ -81,6 +82,12 @@ public class EnergimerkingService(EnergimerkingContext context) : DbContext
         {
             return $"Feil ved søk: {ex.Message}";
         }
+    }
+
+    public async Task<string> GetNearbyDeNormGeoJson(double latitude, double longitude, int amount, double radiusInMeters = 5000)
+    {
+        //grupper etter eiendommer med flere attester og eiendommer med bare en attest
+        return "not finished";
     }
     
 }
