@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Core.Models;
 using Microsoft.EntityFrameworkCore;
 using EnergimerkingContext = Core.DbContexts.EnergimerkingContext;
@@ -7,7 +8,10 @@ System.Globalization.CultureInfo.DefaultThreadCurrentCulture =
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals;
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

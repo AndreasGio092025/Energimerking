@@ -44,7 +44,6 @@ namespace WebApi.Controllers
             return Ok(jsonString);
         }
         
-        
         /*[HttpGet("geojson")]
         public async Task<IActionResult> GetGeoJson(int limit = 8000)
         {
@@ -223,6 +222,51 @@ namespace WebApi.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, $"Feil ved oppdatering: {ex.Message}");
+            }
+        }
+        
+        [HttpGet("GetNearbyDeNormGeoJson")]
+        public async Task<IActionResult> GetNearbyDeNormGeoJson(
+            double latitude = 59.9,
+            double longitude = 10.8,
+            double radiusInMeters = 2500,
+            int amount = 10 
+        )
+        {
+            try
+            {
+                var sumStuff = await _service.GetNearbyDeNormGeoJson(latitude, longitude, amount, radiusInMeters);
+
+                return Ok(sumStuff);
+            } catch (Exception ex)
+            {
+                return StatusCode(500, $"Feil: {ex.Message}");
+            }
+        }
+        /// <summary>
+        /// Dette er bare ett leke-endepunkt.
+        /// </summary>
+        /// <param name="latitude"></param>
+        /// <param name="longitude"></param>
+        /// <param name="radiusInMeters"></param>
+        /// <param name="amount"></param>
+        /// <returns></returns>
+        [HttpGet("get_sum")]
+        public async Task<IActionResult> getSumTest(
+            double latitude = 59.9,
+            double longitude = 10.8,
+            double radiusInMeters = 2500,
+            int amount = 10 
+            )
+        {
+            try
+            {
+                var sumStuff = await _service.GetNearbyDeNormGeoJson(latitude, longitude, amount, radiusInMeters);
+
+                return Ok(sumStuff);
+            } catch (Exception ex)
+            {
+                return StatusCode(500, $"Feil: {ex.Message}");
             }
         }
     }

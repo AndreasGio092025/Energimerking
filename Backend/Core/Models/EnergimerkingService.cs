@@ -85,10 +85,42 @@ public class EnergimerkingService(DbContexts.EnergimerkingContext context) : DbC
         }
     }
 
-    public async Task<string> GetNearbyDeNormGeoJson(double latitude, double longitude, int amount, double radiusInMeters = 5000)
+    public async Task<dynamic> GetNearbyDeNormGeoJson(
+        double latitude = 59.9,
+        double longitude = 10.8,
+        int amount = 10,
+        double radiusInMeters = 2500)
     {
+        if (radiusInMeters <= 0 || radiusInMeters > 50000)
+        {
+                    return "Radius må være mellom 1 og 50 000 meter.";
+        }
+
+        
+        var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4258);
+
+
+        var searchPoint = factory.CreatePoint(
+                new NetTopologySuite.Geometries.Coordinate(longitude, latitude)
+                );
+
+        var testList = await context.DenormMatrikkelOgEnovaOslos
+            .Where(d => d.KommuneNr != null && d.Coordinate != null && d.Coordinate.IsWithinDistance(searchPoint, radiusInMeters))
+            .Select(d => new
+            {
+                breddegrad = d.Coordinate.Coordinate.X,
+                lengdegrad = d.Coordinate.Coordinate.Y,
+                adresse = d.Adresse
+            })
+            .Take(amount)
+            .ToListAsync();
+        
+        var lookDebugList = await context.DenormMatrikkelOgEnovaOslos
+            .Where(d => d.KommuneNr != null && d.Coordinate != null)
+            .Take(amount)
+            .ToListAsync();
         //grupper etter eiendommer med flere attester og eiendommer med bare en attest
-        return "not finished";
+        return testList;
     }
     
 }

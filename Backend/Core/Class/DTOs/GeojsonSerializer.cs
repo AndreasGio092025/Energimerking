@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Core.Interface;
 using NetTopologySuite.Features;
 using NetTopologySuite.IO.Converters;
@@ -28,7 +30,9 @@ public class GeojsonSerializer<TDto> where TDto : IGeojsonDto
         {
             Converters = { new GeoJsonConverterFactory() },
             // Optional: for pretty formatting
-            WriteIndented = true 
+            WriteIndented = true,
+            NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         };
         Json = JsonSerializer.Serialize(featureCollection, options);
     }
