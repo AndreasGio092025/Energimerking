@@ -108,9 +108,25 @@ public class EnergimerkingService(DbContexts.EnergimerkingContext context) : DbC
             .Where(d => d.KommuneNr != null && d.Coordinate != null && d.Coordinate.IsWithinDistance(searchPoint, radiusInMeters))
             .Select(d => new
             {
-                breddegrad = d.Coordinate.Coordinate.X,
-                lengdegrad = d.Coordinate.Coordinate.Y,
-                adresse = d.Adresse
+                denormId = d.Id,
+                lon = d.Coordinate.Coordinate.X,
+                lat = d.Coordinate.Coordinate.Y,
+                adresse = d.Adresse,
+                kommune = d.KommuneNr,
+                gård = d.GaardsNr,
+                bruk = d.BruksNr,
+                feste = d.FesteNr,
+                andel = d.AndelsNr,
+                seksjon = d.SeksjonsNr,
+                bruksenhetsNr = d.BruksenhetsNr,
+                organisasjonsNr = d.OrganisasjonsNr,
+                attestnummer = d.AttestNr,
+                utstedelsesdato = d.UtstedelsesDato,
+                energikarakter = d.Energikarakter,
+                oppvarmingskarakter = d.Oppvarmingskarakter,
+                beregnetLevertEnergiTotaltkWhm2 = d.BeregnetLevertEnergiTotaltkWhm2,
+                materialvalg = d.Matierialvalg,
+                byggeår = d.Byggeår
             })
             .Take(amount)
             .ToListAsync();
