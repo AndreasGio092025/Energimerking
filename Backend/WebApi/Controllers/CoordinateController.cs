@@ -224,7 +224,16 @@ namespace WebApi.Controllers
                 return StatusCode(500, $"Feil ved oppdatering: {ex.Message}");
             }
         }
-        
+        /// <summary>
+        /// Henter gitt mengde med denormaliserte energi-attester sammen med koordinater innenfor
+        /// spesifisert radius i meter.(DenormMatrikkelOgEnovaOslo blir hentet)
+        /// Blir ikke gjort om til geojson enda.
+        /// </summary>
+        /// <param name="latitude"></param>
+        /// <param name="longitude"></param>
+        /// <param name="radiusInMeters"></param>
+        /// <param name="amount"></param>
+        /// <returns></returns>
         [HttpGet("GetNearbyDeNormGeoJson")]
         public async Task<IActionResult> GetNearbyDeNormGeoJson(
             double latitude = 59.9,
