@@ -128,9 +128,10 @@ public class EnergimerkingService(DbContexts.EnergimerkingContext context) : DbC
                 materialvalg = d.Matierialvalg,
                 byggeår = d.Byggeår
             })
+            .OrderByDescending(d => d.utstedelsesdato)
             .Take(amount)
             .ToListAsync();
-        
+        //lagt til order by utstedelsesdato henter nyeste attest
         var lookDebugList = await context.DenormMatrikkelOgEnovaOslos
             .Where(d => d.KommuneNr != null && d.Coordinate != null)
             .Take(amount)
