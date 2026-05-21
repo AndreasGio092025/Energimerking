@@ -153,6 +153,7 @@ public class EnergimerkingService(DbContexts.EnergimerkingContext context) : DbC
 
     /// <summary>
     /// IKKE FERDIG
+    /// Gir foreløpig ikke noe annet ved:"onlyNew = true".
     /// Henter gitt mengde med denormaliserte energi-attester sammen med koordinater innenfor
     /// spesifisert radius i meter og gjør dem om til geojson.(DenormMatrikkelOgEnovaOslo blir hentet) 
     /// </summary>
