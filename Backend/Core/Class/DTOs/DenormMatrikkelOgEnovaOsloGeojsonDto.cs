@@ -31,8 +31,8 @@ public class DenormMatrikkelOgEnovaOsloGeojsonDto : IGeojsonDto
                                                  d.BruksNr == ad.BruksNr &&
                                                  d.Adresse == ad.Adresse &&
                                                  d.BruksenhetsNr == ad.BruksenhetsNr &&
-                                                 d.SeksjonsNr == ad.SeksjonsNr ||
-                                                 d.AndelsNr == ad.AndelsNr ||
+                                                 d.SeksjonsNr == ad.SeksjonsNr &&
+                                                 d.AndelsNr == ad.AndelsNr &&
                                                  d.FesteNr == ad.FesteNr)
                 .Select(ad => new
                 {
@@ -43,32 +43,8 @@ public class DenormMatrikkelOgEnovaOsloGeojsonDto : IGeojsonDto
                     beregnetLevertEnergiTotaltkWhm2 = ad.BeregnetLevertEnergiTotaltkWhm2,
                     materialvalg = ad.Matierialvalg,
                     byggeår = ad.Byggeår
-                }),
-            attestnummer = d.AttestNr,
-            utstedelsesdato = d.UtstedelsesDato,
-            energikarakter = d.Energikarakter,
-            oppvarmingskarakter = d.Oppvarmingskarakter,
-            beregnetLevertEnergiTotaltkWhm2 = d.BeregnetLevertEnergiTotaltkWhm2,
-            materialvalg = d.Matierialvalg,
-            byggeår = d.Byggeår
+                })
         });
-        //Legger ikke alle attestene på en eiendom. (samme eiendom kan dukke opp med ny attest)
-        /*var eiendommer = denormData.Select(d => new
-        {
-            denormId = d.Id,
-            feste = d.FesteNr,
-            andel = d.AndelsNr,
-            seksjon = d.SeksjonsNr,
-            bruksenhetsNr = d.BruksenhetsNr,
-            organisasjonsNr = d.OrganisasjonsNr,
-            attestnummer = d.AttestNr,
-            utstedelsesdato = d.UtstedelsesDato,
-            energikarakter = d.Energikarakter,
-            oppvarmingskarakter = d.Oppvarmingskarakter,
-            beregnetLevertEnergiTotaltkWhm2 = d.BeregnetLevertEnergiTotaltkWhm2,
-            materialvalg = d.Matierialvalg,
-            byggeår = d.Byggeår
-        });*/
         
         var attributes = new AttributesTable();
         attributes.Add("adresse", adresse);
