@@ -2,13 +2,13 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
 }
 
 .search-left {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
 }
 
@@ -26,29 +26,38 @@
   border: 1px solid var(--border);
   background: var(--panel-strong);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(18px);
 }
 
 .chrome-button {
-  padding: 0 18px;
-  height: 50px;
-  border-radius: 18px;
+  padding: 0 16px;
+  height: 48px;
+  border-radius: 8px;
   color: var(--text);
 }
 
-.icon-button {
-  width: 50px;
-  padding: 0;
-  font-size: 1.1rem;
+.search-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.map-action-button {
+  min-width: 86px;
+  font-weight: 600;
+}
+
+.map-action-button.active {
+  border-color: #1a73e8;
+  background: #e8f0fe;
+  color: #174ea6;
 }
 
 .search-shell {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 0 16px;
-  height: 56px;
-  border-radius: 28px;
+  height: 48px;
+  border-radius: 8px;
 }
 
 .search-shell input {
@@ -72,8 +81,8 @@
 .inline-ghost {
   border: 0;
   padding: 8px 10px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.06);
+  border-radius: 6px;
+  background: #f1f3f4;
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 700;
@@ -85,26 +94,26 @@
 
 .suggestions-panel {
   position: absolute;
-  inset: calc(100% + 10px) 0 auto 0;
+  inset: calc(100% + 8px) 0 auto 0;
   padding: 8px;
-  border-radius: 24px;
+  border-radius: 8px;
 }
 
 .suggestion-item {
   display: flex;
   width: 100%;
-  gap: 12px;
+  gap: 10px;
   align-items: flex-start;
-  padding: 14px;
+  padding: 12px;
   border: 0;
-  border-radius: 18px;
+  border-radius: 6px;
   background: transparent;
   color: var(--text);
   text-align: left;
 }
 
 .suggestion-item:hover {
-  background: rgba(15, 23, 42, 0.05);
+  background: #f1f3f4;
 }
 
 .theme-dark .suggestion-item:hover {
@@ -116,7 +125,7 @@
   height: 10px;
   margin-top: 6px;
   border-radius: 50%;
-  background: var(--accent);
+  background: #1a73e8;
   flex-shrink: 0;
 }
 
@@ -148,7 +157,7 @@
   }
 
   .search-wrapper {
-    width: min(100vw - 92px, 44rem);
+    width: 100%;
   }
 }
 
@@ -159,10 +168,19 @@
 
   .search-left {
     width: 100%;
+    flex-wrap: wrap;
   }
 
   .search-wrapper {
     width: 100%;
     min-width: 0;
+  }
+
+  .search-actions {
+    width: 100%;
+  }
+
+  .map-action-button {
+    flex: 1;
   }
 }

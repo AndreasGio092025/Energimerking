@@ -1,25 +1,48 @@
-import axios from 'axios';
+const API_BASE_URL = '/api';
 
-const api = axios.create({
-  baseURL: '/api',
-  timeout: 15000
-});
+function buildUrl(path, params = {}) {
+  const searchParams = new URLSearchParams();
 
-export async function fetchBuildingsGeoJson() {
-  const response = await api.get('/bygg/geojson');
-  return response.data;
-}
-
-export async function fetchNearbyBuildings(latitude, longitude, radiusInMeters) {
-  const response = await api.get('/bygg/nearby', {
-    params: {
-      latitude,
-      longitude,
-      radiusInMeters
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== null && value !== undefined) {
+      searchParams.set(key, value);
     }
   });
 
-  return response.data;
+  const query = searchParams.toString();
+  return `${API_BASE_URL}${path}${query ? `?${query}` : ''}`;
 }
 
-export default api;
+async function getJson(path, params) {
+  const response = await fetch(buildUrl(path, params), {
+    headers: {
+      Accept: 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Request failed with status ${response.status}`);
+  }
+
+  const payload = await response.json();
+
+  if (typeof payload === 'string') {
+    try {
+      return JSON.parse(payload);
+    } catch {
+      return payload;
+    }
+  }
+
+  return payload;
+}
+
+export async function fetchBuildingsGeoJson() {
+  return getJson('/bygg/GetNearbyDeNormGeoJson', {
+    latitude: 59.917330,
+    longitude:  10.844128,
+    radiusInMeters: 3000,
+    amount: 20000
+  });
+}

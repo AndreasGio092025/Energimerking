@@ -4,6 +4,7 @@ export const DEFAULT_ZOOM = 5.2;
 
 export const SOURCE_IDS = {
   buildings: 'buildings',
+  heatmapBuildings: 'heatmap-buildings',
   selected: 'selected-building',
   nearby: 'nearby-buildings',
   nearbyCircle: 'nearby-circle'

@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import MapView from './components/MapView.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import SearchBar from './components/SearchBar.jsx';
-import { fetchBuildingsGeoJson, fetchNearbyBuildings } from './services/api.js';
+import { fetchBuildingsGeoJson } from './services/api.js';
 import { useStore } from './store/useStore.js';
 import {
   buildInitialFilterBounds,
@@ -13,23 +12,25 @@ import {
 } from './utils/filtering.js';
 import './styles/app.css';
 
+function toRadians(degrees) {
+  return (degrees * Math.PI) / 180;
+}
+
+function distanceInMeters(from, to) {
+  const earthRadius = 6371008.8;
+  const deltaLatitude = toRadians(to.latitude - from.latitude);
+  const deltaLongitude = toRadians(to.longitude - from.longitude);
+  const startLatitude = toRadians(from.latitude);
+  const endLatitude = toRadians(to.latitude);
+
+  const haversine =
+    Math.sin(deltaLatitude / 2) ** 2 +
+    Math.cos(startLatitude) * Math.cos(endLatitude) * Math.sin(deltaLongitude / 2) ** 2;
+
+  return 2 * earthRadius * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
+
 function extractErrorMessage(error, fallbackMessage) {
-  const responseData = error?.response?.data;
-
-  if (typeof responseData === 'string' && responseData.trim()) {
-    return responseData;
-  }
-
-  if (responseData && typeof responseData === 'object') {
-    if (typeof responseData.message === 'string' && responseData.message.trim()) {
-      return responseData.message;
-    }
-
-    if (typeof responseData.title === 'string' && responseData.title.trim()) {
-      return responseData.title;
-    }
-  }
-
   if (typeof error?.message === 'string' && error.message.trim()) {
     return error.message;
   }
@@ -39,7 +40,6 @@ function extractErrorMessage(error, fallbackMessage) {
 
 function App() {
   const theme = useStore((state) => state.theme);
-  const sidebarOpen = useStore((state) => state.sidebarOpen);
   const searchQuery = useStore((state) => state.searchQuery);
   const selectedFeature = useStore((state) => state.selectedFeature);
   const nearby = useStore((state) => state.nearby);
@@ -53,11 +53,10 @@ function App() {
   const setAllFeatures = useStore((state) => state.setAllFeatures);
   const setSelectedFeature = useStore((state) => state.setSelectedFeature);
   const setNearby = useStore((state) => state.setNearby);
-  const clearNearby = useStore((state) => state.clearNearby);
-  const toggleSidebar = useStore((state) => state.toggleSidebar);
   const toggleTheme = useStore((state) => state.toggleTheme);
   const setSearchQuery = useStore((state) => state.setSearchQuery);
   const [isSearchingNearby, setIsSearchingNearby] = useState(false);
+  const [searchSelection, setSearchSelection] = useState(null);
 
   useEffect(() => {
     document.body.classList.toggle('theme-dark', theme === 'dark');
@@ -77,6 +76,8 @@ function App() {
         initializeFilters(buildInitialFilterBounds(normalized.features));
       } catch (loadError) {
         if (!active) return;
+        setAllFeatures([]);
+        initializeFilters(buildInitialFilterBounds([]));
         setError(extractErrorMessage(loadError, 'Failed to load building data.'));
       } finally {
         if (active) setLoading(false);
@@ -109,27 +110,53 @@ function App() {
   const handleSuggestionSelect = (feature) => {
     setSelectedFeature(feature);
     setSearchQuery(feature.properties.adresse || feature.properties.poststed || '');
+    setSearchSelection({
+      featureId: feature.id,
+      selectedAt: Date.now()
+    });
   };
 
-  const handleMapClick = async ({ latitude, longitude, radiusInMeters }) => {
-    try {
-      setIsSearchingNearby(true);
-      setError('');
-      const results = await fetchNearbyBuildings(latitude, longitude, radiusInMeters);
-      setNearby({
-        center: { latitude, longitude },
-        radiusInMeters,
-        results
-      });
-    } catch (nearbyError) {
-      setError(extractErrorMessage(nearbyError, 'Failed to load nearby buildings.'));
-      clearNearby();
-    } finally {
-      setIsSearchingNearby(false);
-    }
+  const handleMapClick = ({ latitude, longitude, radiusInMeters }) => {
+    setIsSearchingNearby(true);
+    setError('');
+
+    const center = { latitude, longitude };
+    const results = allFeatures
+      .map((feature) => {
+        const [featureLongitude, featureLatitude] = feature.geometry.coordinates;
+        const featurePoint = {
+          latitude: Number(featureLatitude),
+          longitude: Number(featureLongitude)
+        };
+
+        return {
+          coordinateid: feature.properties.id,
+          latitude: featurePoint.latitude,
+          longitude: featurePoint.longitude,
+          bruksenhetsNr: feature.properties.bruksenhetsNr || feature.properties.brukenhetsnummer || '',
+          energikarakter: feature.properties.energikarakter || '',
+          distanceInMeters: distanceInMeters(center, featurePoint)
+        };
+      })
+      .filter((item) => item.distanceInMeters <= radiusInMeters)
+      .sort((left, right) => left.distanceInMeters - right.distanceInMeters)
+      .slice(0, 200);
+
+    setNearby({
+      center,
+      radiusInMeters,
+      results
+    });
+    setIsSearchingNearby(false);
   };
 
   const isEmpty = !isLoading && !error && filteredFeatures.length === 0;
+  const emptyTitle = allFeatures.length === 0
+    ? 'No backend data loaded'
+    : 'No buildings match these filters';
+  const emptyCopy = allFeatures.length === 0
+    ? 'Try the Swagger defaults: latitude 59.9, longitude 10.8, radius 2500.'
+    : 'Adjust the ranges or grade filters to bring results back.';
 
   return (
     <div className={`app-shell ${theme === 'dark' ? 'theme-dark' : ''}`}>
@@ -143,10 +170,9 @@ function App() {
         <main className="app-main">
           <div className="top-overlay">
             <SearchBar
-              sidebarOpen={sidebarOpen}
               suggestions={suggestions}
+              hasData={allFeatures.length > 0}
               onSuggestionSelect={handleSuggestionSelect}
-              onToggleSidebar={toggleSidebar}
               onToggleTheme={toggleTheme}
             />
           </div>
@@ -154,18 +180,13 @@ function App() {
             features={filteredFeatures}
             allFeaturesCount={allFeatures.length}
             selectedFeature={selectedFeatureFromList}
+            searchSelection={searchSelection}
             nearbyState={nearby}
             onMapClick={handleMapClick}
             isSearchingNearby={isSearchingNearby}
           />
-          <AnimatePresence>
-            {isLoading && (
-              <motion.div
-                className="status-overlay"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
+          {isLoading && (
+              <div className="status-overlay">
                 <div className="status-card">
                   <div className="spinner" />
                   <div>
@@ -173,37 +194,20 @@ function App() {
                     <div className="status-copy">Preparing map, layers, and filters.</div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
-          <AnimatePresence>
-            {error && !isLoading && (
-              <motion.div
-                className="toast toast-error"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 16 }}
-              >
+          {error && !isLoading && (
+              <div className="toast toast-error">
                 <div className="toast-title">Something went wrong</div>
                 <div className="toast-copy">{error}</div>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
-          <AnimatePresence>
-            {isEmpty && (
-              <motion.div
-                className="toast toast-empty"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 16 }}
-              >
-                <div className="toast-title">No buildings match these filters</div>
-                <div className="toast-copy">
-                  Adjust the ranges or grade filters to bring results back.
-                </div>
-              </motion.div>
+          {isEmpty && (
+              <div className="toast toast-empty">
+                <div className="toast-title">{emptyTitle}</div>
+                <div className="toast-copy">{emptyCopy}</div>
+              </div>
             )}
-          </AnimatePresence>
         </main>
       </div>
     </div>

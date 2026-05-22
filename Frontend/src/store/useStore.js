@@ -11,6 +11,7 @@ export const useStore = create((set) => ({
   isLoading: false,
   error: '',
   viewMode: 'markers',
+  nearbySearchEnabled: false,
   searchQuery: '',
   allFeatures: [],
   selectedFeature: null,
@@ -40,6 +41,11 @@ export const useStore = create((set) => ({
   setAllFeatures: (allFeatures) => set({ allFeatures }),
   setSelectedFeature: (selectedFeature) => set({ selectedFeature }),
   setViewMode: (viewMode) => set({ viewMode }),
+  toggleNearbySearch: () =>
+    set((state) => ({
+      nearbySearchEnabled: !state.nearbySearchEnabled
+    })),
+  setNearbySearchEnabled: (nearbySearchEnabled) => set({ nearbySearchEnabled }),
   setNearby: (nearby) => set({ nearby }),
   clearNearby: () =>
     set({

@@ -1,12 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import { useStore } from '../store/useStore.js';
 import '../styles/searchbar.css';
 
-function SearchBar({ sidebarOpen, suggestions, onSuggestionSelect, onToggleSidebar, onToggleTheme }) {
+function SearchBar({
+  suggestions,
+  hasData,
+  onSuggestionSelect,
+  onToggleTheme
+}) {
   const theme = useStore((state) => state.theme);
+  const sidebarOpen = useStore((state) => state.sidebarOpen);
+  const nearbySearchEnabled = useStore((state) => state.nearbySearchEnabled);
   const searchQuery = useStore((state) => state.searchQuery);
   const setSearchQuery = useStore((state) => state.setSearchQuery);
+  const toggleSidebar = useStore((state) => state.toggleSidebar);
+  const toggleNearbySearch = useStore((state) => state.toggleNearbySearch);
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef(null);
 
@@ -24,22 +32,19 @@ function SearchBar({ sidebarOpen, suggestions, onSuggestionSelect, onToggleSideb
   return (
     <div className="search-layout">
       <div className="search-left">
-        <button type="button" className="chrome-button icon-button" onClick={onToggleSidebar} aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}>
-          {sidebarOpen ? 'X' : '='}
-        </button>
-
         <div className="search-wrapper" ref={wrapperRef}>
           <div className="search-shell">
             <span className="search-icon">S</span>
             <input
               type="text"
               value={searchQuery}
+              disabled={!hasData}
               onChange={(event) => {
                 setSearchQuery(event.target.value);
                 setOpen(true);
               }}
               onFocus={() => setOpen(true)}
-              placeholder="Search by adresse, poststed, or kommunenavn"
+              placeholder={hasData ? 'Search by adresse, poststed, or kommunenavn' : 'No building data loaded'}
             />
             {searchQuery && (
               <button type="button" className="inline-ghost" onClick={() => {
@@ -51,9 +56,8 @@ function SearchBar({ sidebarOpen, suggestions, onSuggestionSelect, onToggleSideb
             )}
           </div>
 
-          <AnimatePresence>
-            {open && searchQuery.trim() && (
-              <motion.div className="suggestions-panel" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}>
+          {open && searchQuery.trim() && (
+              <div className="suggestions-panel">
                 {visibleSuggestions.length > 0 ? (
                   visibleSuggestions.map((feature) => (
                     <button key={feature.id} type="button" className="suggestion-item" onClick={() => {
@@ -69,12 +73,32 @@ function SearchBar({ sidebarOpen, suggestions, onSuggestionSelect, onToggleSideb
                       </span>
                     </button>
                   ))
-                ) : (
+                ) : hasData ? (
                   <div className="suggestions-empty">No matching buildings found.</div>
+                ) : (
+                  <div className="suggestions-empty">No building data is available to search.</div>
                 )}
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
+        </div>
+
+        <div className="search-actions">
+          <button
+            type="button"
+            className={`chrome-button map-action-button ${sidebarOpen ? 'active' : ''}`}
+            onClick={toggleSidebar}
+            aria-pressed={sidebarOpen}
+          >
+            Filters
+          </button>
+          <button
+            type="button"
+            className={`chrome-button map-action-button ${nearbySearchEnabled ? 'active' : ''}`}
+            onClick={toggleNearbySearch}
+            aria-pressed={nearbySearchEnabled}
+          >
+            Radius
+          </button>
         </div>
       </div>
 

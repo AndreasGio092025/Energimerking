@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
 import { useStore } from '../store/useStore.js';
 
 function RangeField({ label, min, max, value, onChange, suffix = '', step = 1 }) {
@@ -63,7 +62,7 @@ function Filters() {
 
   return (
     <div className="filters-stack">
-      <motion.section className="filter-card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+      <section className="filter-card">
         <div className="section-heading">
           <div>
             <div className="section-kicker">View mode</div>
@@ -78,9 +77,9 @@ function Filters() {
             Heatmap
           </button>
         </div>
-      </motion.section>
+      </section>
 
-      <motion.section className="filter-card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+      <section className="filter-card">
         <div className="section-heading">
           <div>
             <div className="section-kicker">Filters</div>
@@ -132,16 +131,16 @@ function Filters() {
             </select>
           </div>
         </div>
-      </motion.section>
+      </section>
 
-      <motion.section className="filter-card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+      <section className="filter-card">
         <div className="section-kicker">How to use</div>
         <div className="info-copy">
-          <p>Click the map to call the nearby API and draw a search radius.</p>
-          <p>Select a search result to zoom to a building and highlight it.</p>
+          <p>Turn on Nearby radius, then click the map to draw a search radius.</p>
+          <p>Type in an address to zoom to a building and highlight it.</p>
           <p>Switch to heatmap mode to compare energy-use intensity across the map.</p>
         </div>
-      </motion.section>
+      </section>
     </div>
   );
 }
