@@ -224,8 +224,17 @@ namespace WebApi.Controllers
                 return StatusCode(500, $"Feil ved oppdatering: {ex.Message}");
             }
         }
-        
-        [HttpGet("GetNearbyDeNormGeoJson")]
+        /// <summary>
+        /// Henter gitt mengde med denormaliserte energi-attester sammen med koordinater innenfor
+        /// spesifisert radius i meter.(DenormMatrikkelOgEnovaOslo blir hentet)
+        /// Blir ikke gjort om til geojson enda.
+        /// </summary>
+        /// <param name="latitude"></param>
+        /// <param name="longitude"></param>
+        /// <param name="radiusInMeters"></param>
+        /// <param name="amount"></param>
+        /// <returns></returns>
+        [HttpGet("GetNearbyDeNormDynamicList")]
         public async Task<IActionResult> GetNearbyDeNormGeoJson(
             double latitude = 59.9,
             double longitude = 10.8,
@@ -235,7 +244,7 @@ namespace WebApi.Controllers
         {
             try
             {
-                var sumStuff = await _service.GetNearbyDeNormGeoJson(latitude, longitude, amount, radiusInMeters);
+                var sumStuff = await _service.GetNearbyDeNormDynamicList(latitude, longitude, amount, radiusInMeters);
 
                 return Ok(sumStuff);
             } catch (Exception ex)
@@ -256,12 +265,17 @@ namespace WebApi.Controllers
             double latitude = 59.9,
             double longitude = 10.8,
             double radiusInMeters = 2500,
-            int amount = 10 
+            int amount = 10,
+            bool onlyNew = false
             )
         {
+            if (radiusInMeters <= 0 || radiusInMeters > 50000)
+            {
+                return BadRequest("Radius må være mellom 1 og 50 000 meter.");
+            }
             try
             {
-                var sumStuff = await _service.GetNearbyDeNormGeoJson(latitude, longitude, amount, radiusInMeters);
+                var sumStuff = await _service.GetNearbyDeNormGeoJson(latitude, longitude, amount, radiusInMeters,onlyNew);
 
                 return Ok(sumStuff);
             } catch (Exception ex)

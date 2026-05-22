@@ -85,7 +85,16 @@ public class EnergimerkingService(DbContexts.EnergimerkingContext context) : DbC
         }
     }
 
-    public async Task<dynamic> GetNearbyDeNormGeoJson(
+    /// <summary>
+    /// Henter gitt mengde med denormaliserte energi-attester sammen med koordinater innenfor
+    /// spesifisert radius i meter.(DenormMatrikkelOgEnovaOslo blir hentet)
+    /// </summary>
+    /// <param name="latitude"></param>
+    /// <param name="longitude"></param>
+    /// <param name="amount"></param>
+    /// <param name="radiusInMeters"></param>
+    /// <returns>Anonyme objekter av denormalisert attest, eiendom og koordinat.</returns>
+    public async Task<dynamic> GetNearbyDeNormDynamicList(
         double latitude = 59.9,
         double longitude = 10.8,
         int amount = 10,
@@ -104,8 +113,10 @@ public class EnergimerkingService(DbContexts.EnergimerkingContext context) : DbC
                 new NetTopologySuite.Geometries.Coordinate(longitude, latitude)
                 );
 
-        var testList = await context.DenormMatrikkelOgEnovaOslos
-            .Where(d => d.KommuneNr != null && d.Coordinate != null && d.Coordinate.IsWithinDistance(searchPoint, radiusInMeters))
+        var deNormList = await context.DenormMatrikkelOgEnovaOslos
+            .Where(d => d.KommuneNr != null &&
+                        d.Coordinate != null &&
+                        d.Coordinate.IsWithinDistance(searchPoint, radiusInMeters))
             .Select(d => new
             {
                 denormId = d.Id,
@@ -131,12 +142,69 @@ public class EnergimerkingService(DbContexts.EnergimerkingContext context) : DbC
             .Take(amount)
             .ToListAsync();
         
+        //Bare for å se i debugern.
         var lookDebugList = await context.DenormMatrikkelOgEnovaOslos
             .Where(d => d.KommuneNr != null && d.Coordinate != null)
             .Take(amount)
             .ToListAsync();
         //grupper etter eiendommer med flere attester og eiendommer med bare en attest
-        return testList;
+        return deNormList;
+    }
+
+    /// <summary>
+    /// IKKE FERDIG
+    /// Gir foreløpig ikke noe annet ved:"onlyNew = true".
+    /// Henter gitt mengde med denormaliserte energi-attester sammen med koordinater innenfor
+    /// spesifisert radius i meter og gjør dem om til geojson.(DenormMatrikkelOgEnovaOslo blir hentet) 
+    /// </summary>
+    /// <param name="latitude"></param>
+    /// <param name="longitude"></param>
+    /// <param name="amount"></param>
+    /// <param name="radiusInMeters"></param>
+    /// <param name="onlyNew">Om du bare har lyst på den aller nyeste attesten per eiendoms-modell.</param>
+    /// <returns></returns>
+    public async Task<string> GetNearbyDeNormGeoJson(
+        double latitude = 59.9,
+        double longitude = 10.8,
+        int amount = 10,
+        double radiusInMeters = 2500,
+        bool onlyNew = false)
+    {
+
+        
+        var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4258);
+
+
+        var searchPoint = factory.CreatePoint(
+            new NetTopologySuite.Geometries.Coordinate(longitude, latitude)
+        );
+
+        var deNormList = await context.DenormMatrikkelOgEnovaOslos
+            .Where(d => d.KommuneNr != null &&
+                        d.Coordinate != null &&
+                        d.Coordinate.IsWithinDistance(searchPoint, radiusInMeters))
+            .Take(amount).AsNoTracking().ToListAsync();
+
+        //IEnumerable<List<DenormMatrikkelOgEnovaOslo>> filterlist = null; 
+        List<DenormMatrikkelOgEnovaOsloGeojsonDto> geoJsonDtos = null;
+        //Gjør om til dto med alle attester.
+        if (!onlyNew)
+        {
+            //Grupper etter kommune, gård, bruk og adresse.
+            var filterlist = deNormList.GroupBy(d => (d.KommuneNr, d.GaardsNr, d.BruksNr, d.Adresse))
+                .Select(dg => dg.ToList());
+            //Gjør om listene i filterList til DenormMatrikkelOgEnovaOsloGeojsonDto.
+            var geoJsonDtoIE = 
+                filterlist.Select(l => new DenormMatrikkelOgEnovaOsloGeojsonDto(l));
+            geoJsonDtos = geoJsonDtoIE.ToList();
+        }
+        else
+        {
+            
+        }
+
+        var jsonSerializer = new GeojsonSerializer<DenormMatrikkelOgEnovaOsloGeojsonDto>(geoJsonDtos);
+        return jsonSerializer.Json;
     }
     
 }
