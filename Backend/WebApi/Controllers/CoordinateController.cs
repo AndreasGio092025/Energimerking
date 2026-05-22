@@ -235,7 +235,7 @@ namespace WebApi.Controllers
         /// <param name="amount"></param>
         /// <returns></returns>
         [HttpGet("GetNearbyDeNormDynamicList")]
-        public async Task<IActionResult> GetNearbyDeNormGeoJson(
+        public async Task<IActionResult> GetNearbyDeNormDynamicList(
             double latitude = 59.9,
             double longitude = 10.8,
             double radiusInMeters = 2500,
@@ -245,6 +245,39 @@ namespace WebApi.Controllers
             try
             {
                 var sumStuff = await _service.GetNearbyDeNormDynamicList(latitude, longitude, amount, radiusInMeters);
+
+                return Ok(sumStuff);
+            } catch (Exception ex)
+            {
+                return StatusCode(500, $"Feil: {ex.Message}");
+            }
+        }
+        /// <summary>
+        /// Henter gitt mengde med denormaliserte energi-attester og eiendommer sammen med koordinater innenfor
+        /// spesifisert radius i meter og gjøres om til geojson.(DenormMatrikkelOgEnovaOslo blir hentet)
+        /// </summary>
+        /// <param name="latitude"></param>
+        /// <param name="longitude"></param>
+        /// <param name="radiusInMeters"></param>
+        /// <param name="amount"></param>
+        /// <param name="onlyNew">Om du bare vil ha den nyeste attesten per eiendom.</param>
+        /// <returns>Liste av DenormMatrikkelOgEnovaOslo i geojson</returns>
+        [HttpGet("GetNearbyDeNormGeoJson")]
+        public async Task<IActionResult> GetNearbyDeNormGeoJson(
+            double latitude = 59.9,
+            double longitude = 10.8,
+            double radiusInMeters = 2500,
+            int amount = 10,
+            bool onlyNew = false
+        )
+        {
+            if (radiusInMeters <= 0 || radiusInMeters > 50000)
+            {
+                return BadRequest("Radius må være mellom 1 og 50 000 meter.");
+            }
+            try
+            {
+                var sumStuff = await _service.GetNearbyDeNormGeoJson(latitude, longitude, amount, radiusInMeters,onlyNew);
 
                 return Ok(sumStuff);
             } catch (Exception ex)
