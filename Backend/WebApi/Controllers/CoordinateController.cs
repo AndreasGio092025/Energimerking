@@ -30,7 +30,7 @@ namespace WebApi.Controllers
         {
             _connectionString = configuration.GetConnectionString("Postgres");
         }
-        /*/// <summary>
+        /// <summary>
         /// FUNGERER IKKE
         /// Henter ut gitt mengde med koordinater som har flere eiendoms-modeller knyttet til seg.
         /// </summary>
@@ -122,16 +122,16 @@ namespace WebApi.Controllers
 
             try
             {
-                /*var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4258);
+                var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4258);
 
       
                 var searchPoint = factory.CreatePoint(
                 new NetTopologySuite.Geometries.Coordinate(longitude, latitude)
-                );*/
+                );
                 
                 //Finner koordinater innenfor søkepunktet, og
                 //returnerer en utspørringsliste med koordinat som nøkkel og en utspørringsliste med eiendommer som er knyttet til nøkkelen.
-                /*var coordinates = _context.Coordinates
+                var coordinates = _context.Coordinates
                     .Where(c =>
                         c.Geography != null &&
                         c.Geography.IsWithinDistance(searchPoint, radiusInMeters)
@@ -143,7 +143,7 @@ namespace WebApi.Controllers
                 var dtoList = await coordinates.Select(item =>
                     new FlereEiendommerEttKoordGeojsonDto(item.Key, item.SelectMany(i => i))).ToListAsync();
                 
-                var jsonSerializer = new GeojsonSerializer<FlereEiendommerEttKoordGeojsonDto>(dtoList);*/
+                var jsonSerializer = new GeojsonSerializer<FlereEiendommerEttKoordGeojsonDto>(dtoList);
                 string jsonString = await _service.GetNearbyGeoJson(latitude, longitude, amount, radiusInMeters);
 
                 return Ok(jsonString);
