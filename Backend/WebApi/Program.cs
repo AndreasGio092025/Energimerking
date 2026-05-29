@@ -1,12 +1,22 @@
 using System.Text.Json.Serialization;
 using Core.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using EnergimerkingContext = Core.DbContexts.EnergimerkingContext;
 
 System.Globalization.CultureInfo.DefaultThreadCurrentCulture = 
     System.Globalization.CultureInfo.InvariantCulture;
 
 var builder = WebApplication.CreateBuilder(args);
+
+//Cross Origin Resource Sharing
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy => 
+        policy.AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
 
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
@@ -31,6 +41,7 @@ var app = builder.Build();
     app.UseSwaggerUI();
 
 
+app.UseCors();
 app.UseStaticFiles();
 app.UseDefaultFiles();
 
