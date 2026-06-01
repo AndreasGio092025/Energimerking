@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION get_mvt_points_basic(z INT, x INT, y INT)
+CREATE OR REPLACE FUNCTION get_mvt_points_debug(z INT, x INT, y INT)
 RETURNS bytea
 LANGUAGE sql
 AS $$

@@ -34,6 +34,7 @@ builder.Services.AddDbContext<EnergimerkingContext>(options =>
 );
 
 builder.Services.AddScoped<EnergimerkingService>();
+builder.Services.AddScoped<TileService>();
 
 var app = builder.Build();
 
@@ -50,7 +51,7 @@ app.UseHttpsRedirection();
 
 app.MapControllers();
 
-
+app.MapGet("/", () => "Tile server running");
 
 
 app.Run();
