@@ -26,6 +26,11 @@ export default defineConfig({
         target: apiProxyTarget,
         changeOrigin: true,
         secure: false
+      },
+      '/tiles': {
+        target: apiProxyTarget,
+        changeOrigin: true,
+        secure: false
       }
     }
   }
