@@ -12,8 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 //Cross Origin Resource Sharing
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy => 
-        policy.AllowAnyOrigin()
+    options.AddPolicy("AllowAll",
+        policy => policy
+            .AllowAnyOrigin()
             .AllowAnyHeader()
             .AllowAnyMethod());
 });
@@ -34,6 +35,7 @@ builder.Services.AddDbContext<EnergimerkingContext>(options =>
 );
 
 builder.Services.AddScoped<EnergimerkingService>();
+builder.Services.AddScoped<TileService>();
 
 var app = builder.Build();
 
@@ -41,7 +43,7 @@ var app = builder.Build();
     app.UseSwaggerUI();
 
 
-app.UseCors();
+app.UseCors("AllowAll");
 app.UseStaticFiles();
 app.UseDefaultFiles();
 
@@ -50,7 +52,7 @@ app.UseHttpsRedirection();
 
 app.MapControllers();
 
-
+app.MapGet("/", () => "Tile server running");
 
 
 app.Run();

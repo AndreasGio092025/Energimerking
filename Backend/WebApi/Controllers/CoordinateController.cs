@@ -26,10 +26,7 @@ namespace WebApi.Controllers
             _context = context;
             _service = service;
         }
-        public ByggController(IConfiguration configuration)
-        {
-            _connectionString = configuration.GetConnectionString("Postgres");
-        }
+        
         /// <summary>
         /// FUNGERER IKKE
         /// Henter ut gitt mengde med koordinater som har flere eiendoms-modeller knyttet til seg.
@@ -323,27 +320,6 @@ namespace WebApi.Controllers
             }
         }
 
-        [HttpGet("tiles/{z:int}/{x:int}/{y:int}.pbf")]
-        public async Task<IActionResult> GetTile(int z, int x, int y)
-        {
-            await using var conn = new NpgsqlConnection(_connectionString);
-            await conn.OpenAsync();
-
-            await using var cmd = new NpgsqlCommand(
-                "SELECT get_mvt_points_debug(@z, @x, @y);",
-                conn
-            );
-
-            cmd.Parameters.AddWithValue("z", z);
-            cmd.Parameters.AddWithValue("x", x);
-            cmd.Parameters.AddWithValue("y", y);
-
-            var result = await cmd.ExecuteScalarAsync();
-
-            if (result == null || result == DBNull.Value)
-                return NotFound();
-
-            return File((byte[])result, "application/x-protobuf");
-        }
+        
     }
 }
