@@ -1,76 +1,93 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import maplibregl from 'maplibre-gl';
-import { Flame, Layers, MapPin, TrendingUp } from 'lucide-react';
-import 'maplibre-gl/dist/maplibre-gl.css';
-import { useStore } from '../store/useStore.js';
-import { buildFeatureCollection, buildNearbyCircleGeoJson, buildNearbyGeoJson } from '../utils/geo.js';
+import { useEffect, useMemo, useRef, useState } from "react";
+import maplibregl from "maplibre-gl";
+import { Flame, Layers, MapPin, TrendingUp } from "lucide-react";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { useStore } from "../store/useStore.js";
+import {
+  buildFeatureCollection,
+  buildNearbyCircleGeoJson,
+  buildNearbyGeoJson,
+} from "../utils/geo.js";
 import {
   DARK_MAP_STYLE_URL,
   DEFAULT_CENTER,
   DEFAULT_ZOOM,
+  ENERGY_TILE_CLUSTER_SOURCE_LAYER,
   ENERGY_TILE_SOURCE_LAYER,
+  ENERGY_TILE_STATS_SOURCE_LAYER,
   ENERGY_TILE_URL,
   LAYER_IDS,
   LIGHT_MAP_STYLE_URL,
-  SOURCE_IDS
-} from '../utils/constants.js';
-import '../styles/map-view.css';
+  SOURCE_IDS,
+} from "../utils/constants.js";
+import "../styles/map-view.css";
 
 function escapeHtml(value) {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function energyClass(grade) {
-  const normalized = String(grade || 'unknown').trim().toUpperCase();
-  return /^[A-G]$/.test(normalized) ? `energy-${normalized.toLowerCase()}` : 'energy-unknown';
+  const normalized = String(grade || "unknown")
+    .trim()
+    .toUpperCase();
+  return /^[A-G]$/.test(normalized)
+    ? `energy-${normalized.toLowerCase()}`
+    : "energy-unknown";
 }
 
 function hasValue(value) {
-  return value !== null && value !== undefined && value !== '';
+  return value !== null && value !== undefined && value !== "";
 }
 
-function displayValue(value, fallback = 'Not registered') {
+function displayValue(value, fallback = "Not registered") {
   return hasValue(value) ? value : fallback;
 }
 
 const POPUP_HELP = {
-  grade: 'Energy grade runs from A to G. A is best and G is weakest. It is based on calculated delivered energy per square meter for normal use.',
-  unit: 'The building unit number, called bruksenhetsnummer/bruksenhetsNr in the source data.',
-  energyUse: 'Calculated delivered energy per square meter for normal use, shown as kWh/m2.',
-  built: 'The construction year registered for the building or unit.',
-  address: 'The registered street address for this building or unit.',
-  municipality: 'The municipality name when available.',
-  gard: 'Norwegian property register farm number.',
-  bruk: 'Norwegian property register usage number.',
-  feste: 'Leasehold number from the property register, when registered.',
-  andel: 'Share number from the property register, when registered.',
-  seksjon: 'Section number from the property register, often used for condominiums/sections.',
-  organisation: 'Organisation number connected to the registered certificate, when available.',
-  certificate: 'Energy certificate identifier from Enova/energy marking data.',
-  issued: 'Date when the energy certificate was issued.',
-  heatingGrade: 'Heating grade is the red-to-green score for the installed heating system. Green is best and it is independent of the energy grade.',
-  material: 'Registered material or construction information, when present.'
+  grade:
+    "Energy grade runs from A to G. A is best and G is weakest. It is based on calculated delivered energy per square meter for normal use.",
+  unit: "The building unit number, called bruksenhetsnummer/bruksenhetsNr in the source data.",
+  energyUse:
+    "Calculated delivered energy per square meter for normal use, shown as kWh/m2.",
+  built: "The construction year registered for the building or unit.",
+  address: "The registered street address for this building or unit.",
+  municipality: "The municipality name when available.",
+  gard: "Norwegian property register farm number.",
+  bruk: "Norwegian property register usage number.",
+  feste: "Leasehold number from the property register, when registered.",
+  andel: "Share number from the property register, when registered.",
+  seksjon:
+    "Section number from the property register, often used for condominiums/sections.",
+  organisation:
+    "Organisation number connected to the registered certificate, when available.",
+  certificate: "Energy certificate identifier from Enova/energy marking data.",
+  issued: "Date when the energy certificate was issued.",
+  heatingGrade:
+    "Heating grade is the red-to-green score for the installed heating system. Green is best and it is independent of the energy grade.",
+  material: "Registered material or construction information, when present.",
 };
 
 function popupHelp(text) {
-  if (!text) return '';
+  if (!text) return "";
 
   return `<button type="button" class="popup-help" title="${escapeHtml(text)}" aria-label="${escapeHtml(text)}">?</button>`;
 }
 
-function popupLabel(label, tooltip = '') {
+function popupLabel(label, tooltip = "") {
   return `<span class="popup-label-text">${escapeHtml(label)}${popupHelp(tooltip)}</span>`;
 }
 
-function popupDetail(label, value, tooltip = '') {
-  if (!hasValue(value)) return '';
+function popupDetail(label, value, tooltip = "") {
+  if (!hasValue(value)) return "";
 
-  const valueClass = hasValue(value) ? 'popup-value' : 'popup-value popup-value-empty';
+  const valueClass = hasValue(value)
+    ? "popup-value"
+    : "popup-value popup-value-empty";
   return `
     <div class="popup-detail">
       <span class="popup-label">${popupLabel(label, tooltip)}</span>
@@ -79,13 +96,15 @@ function popupDetail(label, value, tooltip = '') {
   `;
 }
 
-function popupMetric(label, value, modifier = '', tooltip = '') {
-  const metricClass = ['popup-metric', modifier].filter(Boolean).join(' ');
-  const valueClass = hasValue(value) ? 'popup-metric-value' : 'popup-metric-value popup-value-empty';
+function popupMetric(label, value, modifier = "", tooltip = "") {
+  const metricClass = ["popup-metric", modifier].filter(Boolean).join(" ");
+  const valueClass = hasValue(value)
+    ? "popup-metric-value"
+    : "popup-metric-value popup-value-empty";
   return `
     <div class="${metricClass}">
       <span>${popupLabel(label, tooltip)}</span>
-      <strong class="${valueClass}">${escapeHtml(displayValue(value, 'N/A'))}</strong>
+      <strong class="${valueClass}">${escapeHtml(displayValue(value, "N/A"))}</strong>
     </div>
   `;
 }
@@ -95,12 +114,17 @@ function firstPopulated(...values) {
 }
 
 function popupHtml(properties) {
-  const address = escapeHtml(displayValue(properties.adresse, 'Unknown address'));
-  const municipality = hasValue(properties.kommunenavn) ? escapeHtml(properties.kommunenavn) : '';
-  const energyGrade = displayValue(properties.energikarakter, 'N/A');
+  const address = escapeHtml(
+    displayValue(properties.adresse, "Unknown address"),
+  );
+  const municipality = hasValue(properties.kommunenavn)
+    ? escapeHtml(properties.kommunenavn)
+    : "";
+  const energyGrade = displayValue(properties.energikarakter, "N/A");
   const energyGradeDisplay = escapeHtml(energyGrade);
   const energyGradeClass = energyClass(energyGrade);
-  const energyUse = properties.beregnetLevertEnergiTotaltkWhm2 ?? properties.energibruk_kwh_m2;
+  const energyUse =
+    properties.beregnetLevertEnergiTotaltkWhm2 ?? properties.energibruk_kwh_m2;
   const unitNumber = firstPopulated(
     properties.bruksenhetsNr,
     properties.bruksenhetsnummer,
@@ -109,7 +133,7 @@ function popupHtml(properties) {
     properties.brukenhetsnummer,
     properties.brukenhetsNR,
     properties.Brukenhetsnummer,
-    properties.BrukenhetsNR
+    properties.BrukenhetsNR,
   );
 
   return `
@@ -118,7 +142,7 @@ function popupHtml(properties) {
         <div class="popup-heading">
           <div class="popup-kicker">Energy certificate</div>
           <div class="popup-title">${address}</div>
-          ${municipality ? `<div class="popup-subtitle">${municipality}</div>` : ''}
+          ${municipality ? `<div class="popup-subtitle">${municipality}</div>` : ""}
         </div>
         <div class="energy-badge ${energyGradeClass}">
           <span>${popupHelp(POPUP_HELP.grade)}</span>
@@ -126,38 +150,38 @@ function popupHtml(properties) {
         </div>
       </div>
       <div class="popup-metrics">
-        ${popupMetric('Unit', unitNumber, 'popup-metric-compact', POPUP_HELP.unit)}
-        ${popupMetric('Energy use', energyUse, 'popup-metric-compact', POPUP_HELP.energyUse)}
-        ${popupMetric('Built', properties.byggeaar, 'popup-metric-compact', POPUP_HELP.built)}
+        ${popupMetric("Unit", unitNumber, "popup-metric-compact", POPUP_HELP.unit)}
+        ${popupMetric("Energy use", energyUse, "popup-metric-compact", POPUP_HELP.energyUse)}
+        ${popupMetric("Built", properties.byggeaar, "popup-metric-compact", POPUP_HELP.built)}
       </div>
       <div class="popup-details">
-        ${popupDetail('Address', properties.adresse, POPUP_HELP.address)}
-        ${popupDetail('Municipality', properties.kommunenavn, POPUP_HELP.municipality)}
-        ${popupDetail('Gård', properties.gard)}
-        ${popupDetail('Bruk', properties.bruksnummer, POPUP_HELP.bruk)}
-        ${popupDetail('Feste', properties.feste, POPUP_HELP.feste)}
-        ${popupDetail('Andel', properties.andel, POPUP_HELP.andel)}
-        ${popupDetail('Seksjon', properties.seksjon, POPUP_HELP.seksjon)}
-        ${popupDetail('Organisation no.', properties.organisasjonsNr, POPUP_HELP.organisation)}
-        ${popupDetail('Certificate no.', properties.attestnummer, POPUP_HELP.certificate)}
-        ${popupDetail('Issued', properties.utstedelsesdato, POPUP_HELP.issued)}
-        ${popupDetail('Heating grade', properties.oppvarmingskarakter, POPUP_HELP.heatingGrade)}
-        ${popupDetail('Material', properties.materialvalg, POPUP_HELP.material)}
+        ${popupDetail("Address", properties.adresse, POPUP_HELP.address)}
+        ${popupDetail("Municipality", properties.kommunenavn, POPUP_HELP.municipality)}
+        ${popupDetail("Gård", properties.gard)}
+        ${popupDetail("Bruk", properties.bruksnummer, POPUP_HELP.bruk)}
+        ${popupDetail("Feste", properties.feste, POPUP_HELP.feste)}
+        ${popupDetail("Andel", properties.andel, POPUP_HELP.andel)}
+        ${popupDetail("Seksjon", properties.seksjon, POPUP_HELP.seksjon)}
+        ${popupDetail("Organisation no.", properties.organisasjonsNr, POPUP_HELP.organisation)}
+        ${popupDetail("Certificate no.", properties.attestnummer, POPUP_HELP.certificate)}
+        ${popupDetail("Issued", properties.utstedelsesdato, POPUP_HELP.issued)}
+        ${popupDetail("Heating grade", properties.oppvarmingskarakter, POPUP_HELP.heatingGrade)}
+        ${popupDetail("Material", properties.materialvalg, POPUP_HELP.material)}
       </div>
     </div>
   `;
 }
 
 function priorityClass(score) {
-  if (score >= 75) return 'priority-high';
-  if (score >= 45) return 'priority-medium';
-  return 'priority-low';
+  if (score >= 75) return "priority-high";
+  if (score >= 45) return "priority-medium";
+  return "priority-low";
 }
 
 function priorityLabel(score) {
-  if (score >= 75) return 'High priority';
-  if (score >= 45) return 'Medium priority';
-  return 'Low priority';
+  if (score >= 75) return "High priority";
+  if (score >= 45) return "Medium priority";
+  return "Low priority";
 }
 
 function scoreBar(label, score) {
@@ -177,42 +201,68 @@ function scoreBar(label, score) {
 }
 
 function upgradeRecommendations(properties) {
-  const energyGrade = String(properties.energikarakter || '').trim().toUpperCase();
-  const heatingGrade = String(properties.oppvarmingskarakter || '').trim().toUpperCase();
-  const energyUse = Number(properties.energibruk_kwh_m2 ?? properties.beregnetLevertEnergiTotaltkWhm2);
+  const energyGrade = String(properties.energikarakter || "")
+    .trim()
+    .toUpperCase();
+  const heatingGrade = String(properties.oppvarmingskarakter || "")
+    .trim()
+    .toUpperCase();
+  const energyUse = Number(
+    properties.energibruk_kwh_m2 ?? properties.beregnetLevertEnergiTotaltkWhm2,
+  );
   const recommendations = [];
 
-  if (['E', 'F', 'G'].includes(energyGrade) || energyUse >= 300) {
-    recommendations.push('Check insulation, windows, ventilation heat recovery, and air leakage first.');
-  } else if (['C', 'D'].includes(energyGrade) || energyUse >= 180) {
-    recommendations.push('Look for medium upgrades: attic insulation, window improvements, and smarter ventilation.');
+  if (["E", "F", "G"].includes(energyGrade) || energyUse >= 300) {
+    recommendations.push(
+      "Check insulation, windows, ventilation heat recovery, and air leakage first.",
+    );
+  } else if (["C", "D"].includes(energyGrade) || energyUse >= 180) {
+    recommendations.push(
+      "Look for medium upgrades: attic insulation, window improvements, and smarter ventilation.",
+    );
   } else {
-    recommendations.push('Energy performance looks relatively strong; focus on smaller efficiency wins.');
+    recommendations.push(
+      "Energy performance looks relatively strong; focus on smaller efficiency wins.",
+    );
   }
 
-  if (['RED', 'ORANGE'].includes(heatingGrade)) {
-    recommendations.push('Prioritize heating upgrades such as heat pump, district heating, or another renewable/non-direct-electric source.');
-  } else if (heatingGrade === 'YELLOW') {
-    recommendations.push('Heating is partly renewable; compare whether a larger renewable share would improve the certificate.');
+  if (["RED", "ORANGE"].includes(heatingGrade)) {
+    recommendations.push(
+      "Prioritize heating upgrades such as heat pump, district heating, or another renewable/non-direct-electric source.",
+    );
+  } else if (heatingGrade === "YELLOW") {
+    recommendations.push(
+      "Heating is partly renewable; compare whether a larger renewable share would improve the certificate.",
+    );
   } else {
-    recommendations.push('Heating grade is already strong; focus more on reducing heat loss through insulation, windows, roof, and walls.');
+    recommendations.push(
+      "Heating grade is already strong; focus more on reducing heat loss through insulation, windows, roof, and walls.",
+    );
   }
 
   if (Number(properties.byggeaar) && Number(properties.byggeaar) < 1987) {
-    recommendations.push('Older building year suggests checking insulation, windows, roof, and wall heat loss before expensive system changes.');
+    recommendations.push(
+      "Older building year suggests checking insulation, windows, roof, and wall heat loss before expensive system changes.",
+    );
   }
 
   return recommendations;
 }
 
 function upgradePopupHtml(properties) {
-  const address = escapeHtml(displayValue(properties.adresse, 'Unknown address'));
-  const energyUse = properties.beregnetLevertEnergiTotaltkWhm2 ?? properties.energibruk_kwh_m2;
-  const score = Math.max(0, Math.min(100, Number(properties.upgradeScore) || 0));
+  const address = escapeHtml(
+    displayValue(properties.adresse, "Unknown address"),
+  );
+  const energyUse =
+    properties.beregnetLevertEnergiTotaltkWhm2 ?? properties.energibruk_kwh_m2;
+  const score = Math.max(
+    0,
+    Math.min(100, Number(properties.upgradeScore) || 0),
+  );
   const priority = properties.upgradePriority || priorityLabel(score);
   const recommendations = upgradeRecommendations(properties)
     .map((item) => `<li>${escapeHtml(item)}</li>`)
-    .join('');
+    .join("");
 
   return `
     <div class="popup-card popup-card-upgrade">
@@ -229,16 +279,16 @@ function upgradePopupHtml(properties) {
       </div>
 
       <div class="popup-metrics">
-        ${popupMetric('Energy grade', properties.energikarakter, 'popup-metric-compact', POPUP_HELP.grade)}
-        ${popupMetric('Heating grade', properties.oppvarmingskarakter, 'popup-metric-compact', POPUP_HELP.heatingGrade)}
-        ${popupMetric('Energy use', energyUse, 'popup-metric-compact', POPUP_HELP.energyUse)}
-        ${popupMetric('Built', properties.byggeaar, 'popup-metric-compact', POPUP_HELP.built)}
+        ${popupMetric("Energy grade", properties.energikarakter, "popup-metric-compact", POPUP_HELP.grade)}
+        ${popupMetric("Heating grade", properties.oppvarmingskarakter, "popup-metric-compact", POPUP_HELP.heatingGrade)}
+        ${popupMetric("Energy use", energyUse, "popup-metric-compact", POPUP_HELP.energyUse)}
+        ${popupMetric("Built", properties.byggeaar, "popup-metric-compact", POPUP_HELP.built)}
       </div>
 
       <div class="score-breakdown">
-        ${scoreBar('Total priority', score)}
-        ${scoreBar('Energy upgrade need', properties.energyUpgradeScore)}
-        ${scoreBar('Heating upgrade need', properties.heatingUpgradeScore)}
+        ${scoreBar("Total priority", score)}
+        ${scoreBar("Energy upgrade need", properties.energyUpgradeScore)}
+        ${scoreBar("Heating upgrade need", properties.heatingUpgradeScore)}
       </div>
 
       <div class="upgrade-actions">
@@ -250,32 +300,91 @@ function upgradePopupHtml(properties) {
 }
 
 function popupHtmlForMode(properties, mode) {
-  return mode === 'upgrade' ? upgradePopupHtml(properties) : popupHtml(properties);
+  return mode === "upgrade"
+    ? upgradePopupHtml(properties)
+    : popupHtml(properties);
 }
 
 function tilePropertiesToPopupProperties(properties = {}) {
+  const energyUse = firstPopulated(
+    properties.beregnetLevertEnergiTotaltkWhm2,
+    properties.energibruk_kwh_m2,
+    properties.energy,
+  );
+
   return {
     id: properties.id,
     adresse: properties.adresse,
+    materialvalg: properties.materialvalg,
+    byggeaar: properties.byggeaar,
+    gard: properties.gard,
+    bruksenhetsNr: properties.bruksenhetsNr,
     energikarakter: properties.energikarakter,
     oppvarmingskarakter: properties.oppvarmingskarakter,
-    beregnetLevertEnergiTotaltkWhm2: properties.beregnetLevertEnergiTotaltkWhm2,
-    energibruk_kwh_m2: properties.beregnetLevertEnergiTotaltkWhm2,
-    attestnummer: properties.attestNr
+    beregnetLevertEnergiTotaltkWhm2: energyUse,
+    energibruk_kwh_m2: energyUse,
+    attestnummer: properties.attestNr,
   };
 }
 
+function clusterPopupHtml(properties = {}) {
+  const count = Number(properties.point_count || 0);
+  const averageEnergy = properties.avg_energy
+    ? Number(properties.avg_energy).toFixed(1)
+    : null;
+
+  return `
+    <div class="popup-card">
+      <div class="popup-header">
+        <div class="popup-heading">
+          <div class="popup-kicker">Cluster</div>
+          <div class="popup-title">${escapeHtml(count)} properties</div>
+          ${averageEnergy ? `<div class="popup-subtitle">Average energy ${escapeHtml(averageEnergy)}</div>` : ""}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function statsPopupHtml(properties = {}) {
+  const totalPoints = Number(properties.total_points || 0);
+  const avgEnergy = properties.avg_energy
+    ? Number(properties.avg_energy).toFixed(1)
+    : null;
+
+  return `
+    <div class="popup-card">
+      <div class="popup-header">
+        <div class="popup-heading">
+          <div class="popup-kicker">Tile statistics</div>
+          <div class="popup-title">${escapeHtml(totalPoints)} points</div>
+          ${avgEnergy ? `<div class="popup-subtitle">Average energy ${escapeHtml(avgEnergy)}</div>` : ""}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function idsMatch(left, right) {
-  return left !== null && left !== undefined && right !== null && right !== undefined && String(left) === String(right);
+  return (
+    left !== null &&
+    left !== undefined &&
+    right !== null &&
+    right !== undefined &&
+    String(left) === String(right)
+  );
 }
 
 function findFeatureById(features, id) {
-  return features.find((item) => idsMatch(item.id, id) || idsMatch(item.properties?.id, id));
+  return features.find(
+    (item) => idsMatch(item.id, id) || idsMatch(item.properties?.id, id),
+  );
 }
 
 function coordinateKey(feature) {
   const [longitude, latitude] = feature?.geometry?.coordinates || [];
-  if (!Number.isFinite(Number(longitude)) || !Number.isFinite(Number(latitude))) return '';
+  if (!Number.isFinite(Number(longitude)) || !Number.isFinite(Number(latitude)))
+    return "";
   return `${Number(longitude).toFixed(5)}-${Number(latitude).toFixed(5)}`;
 }
 
@@ -286,8 +395,8 @@ function findUnitsAtFeatureLocation(features, selectedFeature) {
   return features
     .filter((feature) => coordinateKey(feature) === selectedKey)
     .sort((left, right) => {
-      const leftUnit = left.properties?.bruksenhetsNr || '';
-      const rightUnit = right.properties?.bruksenhetsNr || '';
+      const leftUnit = left.properties?.bruksenhetsNr || "";
+      const rightUnit = right.properties?.bruksenhetsNr || "";
       return leftUnit.localeCompare(rightUnit, undefined, { numeric: true });
     });
 }
@@ -295,8 +404,8 @@ function findUnitsAtFeatureLocation(features, selectedFeature) {
 function findUnitsAtCoordinates(features, coordinates) {
   return findUnitsAtFeatureLocation(features, {
     geometry: {
-      coordinates
-    }
+      coordinates,
+    },
   });
 }
 
@@ -304,7 +413,9 @@ function median(values) {
   if (values.length === 0) return 0;
   const sorted = [...values].sort((left, right) => left - right);
   const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0 ? (sorted[middle - 1] + sorted[middle]) / 2 : sorted[middle];
+  return sorted.length % 2 === 0
+    ? (sorted[middle - 1] + sorted[middle]) / 2
+    : sorted[middle];
 }
 
 function percentile(values, targetPercentile) {
@@ -337,36 +448,40 @@ function buildHeatmapData(features) {
     if (!grouped.has(key)) {
       grouped.set(key, {
         coordinates: feature.geometry.coordinates,
-        values: []
+        values: [],
       });
     }
 
     grouped.get(key).values.push(energyUse);
   });
 
-  const aggregatedFeatures = Array.from(grouped.entries()).map(([key, group]) => {
-    const heatmapEnergy = median(group.values);
+  const aggregatedFeatures = Array.from(grouped.entries()).map(
+    ([key, group]) => {
+      const heatmapEnergy = median(group.values);
 
-    return {
-      type: 'Feature',
-      id: `heatmap-${key}`,
-      geometry: {
-        type: 'Point',
-        coordinates: group.coordinates
-      },
-      properties: {
+      return {
+        type: "Feature",
         id: `heatmap-${key}`,
-        heatmapEnergy,
-        unitCount: group.values.length
-      }
-    };
-  });
+        geometry: {
+          type: "Point",
+          coordinates: group.coordinates,
+        },
+        properties: {
+          id: `heatmap-${key}`,
+          heatmapEnergy,
+          unitCount: group.values.length,
+        },
+      };
+    },
+  );
 
-  const values = aggregatedFeatures.map((feature) => feature.properties.heatmapEnergy);
+  const values = aggregatedFeatures.map(
+    (feature) => feature.properties.heatmapEnergy,
+  );
   const [p50, p80, p95] = ascendingStops([
     percentile(values, 0.5),
     percentile(values, 0.8),
-    percentile(values, 0.95)
+    percentile(values, 0.95),
   ]);
 
   return {
@@ -375,16 +490,16 @@ function buildHeatmapData(features) {
       p50,
       p80,
       p95,
-      count: aggregatedFeatures.length
-    }
+      count: aggregatedFeatures.length,
+    },
   };
 }
 
 function heatmapWeightExpression(stats) {
   return [
-    'interpolate',
-    ['linear'],
-    ['coalesce', ['get', 'heatmapEnergy'], 0],
+    "interpolate",
+    ["linear"],
+    ["coalesce", ["get", "heatmapEnergy"], 0],
     0,
     0.14,
     stats.p50,
@@ -392,23 +507,23 @@ function heatmapWeightExpression(stats) {
     stats.p80,
     0.72,
     stats.p95,
-    1
+    1,
   ];
 }
 
 function heatmapPointColorExpression(stats) {
   return [
-    'interpolate',
-    ['linear'],
-    ['coalesce', ['get', 'energibruk_kwh_m2'], ['get', 'heatmapEnergy'], 0],
+    "interpolate",
+    ["linear"],
+    ["coalesce", ["get", "energibruk_kwh_m2"], ["get", "heatmapEnergy"], 0],
     0,
-    '#7dd3fc',
+    "#7dd3fc",
     stats.p50,
-    '#2dd4bf',
+    "#2dd4bf",
     stats.p80,
-    '#fde047',
+    "#fde047",
     stats.p95,
-    '#ef4444'
+    "#ef4444",
   ];
 }
 
@@ -418,65 +533,77 @@ function unitsToListPayload(units) {
       const props = unit.properties || unit;
 
       return {
-        id: unit.id || props.id || props.coordinateid || props.Coordinateid || props.CoordinateId,
-        adresse: props.adresse || props.Adresse || '',
-        poststed: props.poststed || props.Poststed || '',
-        kommunenavn: props.kommunenavn || props.Kommunenavn || '',
-        bruksenhetsNr: firstPopulated(
-          props.brukenhetsnummer,
-          props.brukenhetsNR,
-          props.bruksenhetsNr,
-          props.bruksenhetsnummer,
-          props.Brukenhetsnummer,
-          props.BrukenhetsNR,
-          props.BruksenhetsNr,
-          props.Bruksenhetsnummer
-        ) || '',
-        energikarakter: props.energikarakter || props.Energikarakter || '',
-        distanceInMeters: props.distanceInMeters
+        id:
+          unit.id ||
+          props.id ||
+          props.coordinateid ||
+          props.Coordinateid ||
+          props.CoordinateId,
+        adresse: props.adresse || props.Adresse || "",
+        poststed: props.poststed || props.Poststed || "",
+        kommunenavn: props.kommunenavn || props.Kommunenavn || "",
+        bruksenhetsNr:
+          firstPopulated(
+            props.brukenhetsnummer,
+            props.brukenhetsNR,
+            props.bruksenhetsNr,
+            props.bruksenhetsnummer,
+            props.Brukenhetsnummer,
+            props.BrukenhetsNR,
+            props.BruksenhetsNr,
+            props.Bruksenhetsnummer,
+          ) || "",
+        energikarakter: props.energikarakter || props.Energikarakter || "",
+        distanceInMeters: props.distanceInMeters,
       };
-    })
+    }),
   );
 }
 
 function nearbyPopupHtml(properties) {
-  const coordinateId = escapeHtml(properties.coordinateid ?? 'unknown');
-  const latitude = escapeHtml(properties.latitude ?? 'N/A');
-  const longitude = escapeHtml(properties.longitude ?? 'N/A');
+  const coordinateId = escapeHtml(properties.coordinateid ?? "unknown");
+  const latitude = escapeHtml(properties.latitude ?? "N/A");
+  const longitude = escapeHtml(properties.longitude ?? "N/A");
   const unitCount = properties.unitCount ?? 1;
-  
+
   let html = `
     <div class="popup-card popup-card-small">
       <div class="popup-kicker">Nearby result</div>
       <div class="popup-title">Coordinate #${coordinateId}</div>
       <div class="popup-subtitle">Lat ${latitude}, Lng ${longitude}</div>
   `;
-  
+
   if (unitCount > 1) {
     html += `<div class="popup-grid"><div class="popup-metric"><span>Building units</span><strong>${unitCount}</strong></div></div>`;
   } else {
-    const unitNumber = escapeHtml(firstPopulated(
-      properties.brukenhetsnummer,
-      properties.brukenhetsNR,
-      properties.bruksenhetsNr,
-      properties.bruksenhetsnummer,
-      properties.Brukenhetsnummer,
-      properties.BrukenhetsNR,
-      properties.BruksenhetsNr,
-      properties.Bruksenhetsnummer
-    ) || 'N/A');
+    const unitNumber = escapeHtml(
+      firstPopulated(
+        properties.brukenhetsnummer,
+        properties.brukenhetsNR,
+        properties.bruksenhetsNr,
+        properties.bruksenhetsnummer,
+        properties.Brukenhetsnummer,
+        properties.BrukenhetsNR,
+        properties.BruksenhetsNr,
+        properties.Bruksenhetsnummer,
+      ) || "N/A",
+    );
     html += `
       <div class="popup-grid">
         <div class="popup-metric"><span>Unit number</span><strong>${unitNumber}</strong></div>
       </div>
     `;
   }
-  
+
   html += `</div>`;
   return html;
 }
 
-function nearbyUnitsListHtml(units, address = 'Unknown address', coordinates = [0, 0]) {
+function nearbyUnitsListHtml(
+  units,
+  address = "Unknown address",
+  coordinates = [0, 0],
+) {
   const parsedUnits = JSON.parse(units);
   const addressDisplay = escapeHtml(address);
   const unitsHtml = parsedUnits
@@ -484,28 +611,28 @@ function nearbyUnitsListHtml(units, address = 'Unknown address', coordinates = [
       (u) => `
       <div class="nearby-unit-item" data-coordinateid="${u.id}">
         <div class="nearby-unit-row">
-          <div class="nearby-unit-title">${escapeHtml(u.adresse || 'Unknown address')}</div>
+          <div class="nearby-unit-title">${escapeHtml(u.adresse || "Unknown address")}</div>
           ${
             u.energikarakter
               ? `<div class="energy-badge energy-badge-small ${energyClass(u.energikarakter)}">${escapeHtml(u.energikarakter)}</div>`
-              : ''
+              : ""
           }
         </div>
         ${
           u.bruksenhetsNr || u.poststed || u.kommunenavn
-            ? `<div class="nearby-unit-location">${escapeHtml([u.bruksenhetsNr ? `Unit ${u.bruksenhetsNr}` : '', u.poststed, u.kommunenavn].filter(Boolean).join(' | '))}</div>`
-            : ''
+            ? `<div class="nearby-unit-location">${escapeHtml([u.bruksenhetsNr ? `Unit ${u.bruksenhetsNr}` : "", u.poststed, u.kommunenavn].filter(Boolean).join(" | "))}</div>`
+            : ""
         }
         ${
           Number.isFinite(Number(u.distanceInMeters))
             ? `<div class="nearby-unit-distance">${Number(u.distanceInMeters).toFixed(0)} m</div>`
-            : ''
+            : ""
         }
       </div>
-    `
+    `,
     )
-    .join('');
-  
+    .join("");
+
   return `
     <div class="popup-card popup-card-units" data-lng="${coordinates[0]}" data-lat="${coordinates[1]}">
       <div class="popup-kicker">Building units at location</div>
@@ -532,14 +659,11 @@ function keepPopupInView(map, popup) {
     const containerCenterY = containerRect.top + containerRect.height / 2;
 
     map.panBy(
-      [
-        popupCenterX - containerCenterX,
-        popupCenterY - containerCenterY
-      ],
+      [popupCenterX - containerCenterX, popupCenterY - containerCenterY],
       {
         duration: 360,
-        essential: true
-      }
+        essential: true,
+      },
     );
   });
 }
@@ -549,15 +673,17 @@ function openPopup(map, coordinates, html) {
     closeButton: true,
     closeOnClick: false,
     offset: 18,
-    maxWidth: 'none'
+    maxWidth: "none",
   })
     .setLngLat(coordinates)
     .setHTML(html)
     .addTo(map);
 
   popup._energimerkingState = {
-    coordinates: Array.isArray(coordinates) ? coordinates.slice() : [coordinates.lng, coordinates.lat],
-    html
+    coordinates: Array.isArray(coordinates)
+      ? coordinates.slice()
+      : [coordinates.lng, coordinates.lat],
+    html,
   };
 
   keepPopupInView(map, popup);
@@ -565,7 +691,9 @@ function openPopup(map, coordinates, html) {
 }
 
 function formatEnergy(value) {
-  return Number.isFinite(value) && value > 0 ? `${Math.round(value)} kWh/m2` : 'N/A';
+  return Number.isFinite(value) && value > 0
+    ? `${Math.round(value)} kWh/m2`
+    : "N/A";
 }
 
 function MapLegend({ heatmapStats }) {
@@ -576,7 +704,7 @@ function MapLegend({ heatmapStats }) {
   return (
     <div className="map-legend">
       <div className="legend-kicker">Information card</div>
-      {viewMode === 'heatmap' ? (
+      {viewMode === "heatmap" ? (
         <>
           <div className="legend-copy">Energy use per building location</div>
           <div className="legend-gradient" />
@@ -591,45 +719,60 @@ function MapLegend({ heatmapStats }) {
             </span>
           </div>
         </>
+      ) : viewMode === "tiles" ? (
+        <div className="legend-list">
+          <div className="legend-item">
+            <span className="legend-dot dot-building" />
+            Backend vector tile buildings
+          </div>
+          <div className="legend-copy">
+            Colored by energy grade from the tile properties.
+          </div>
+        </div>
+      ) : viewMode === "upgrade" ? (
+        <>
+          <div className="legend-copy">Upgrade priority score</div>
+          <div className="legend-gradient priority-gradient" />
+          <div className="legend-scale">
+            <span>
+              <strong>Low</strong>
+              <small>better condition</small>
+            </span>
+            <span>
+              <strong>High</strong>
+              <small>fix first</small>
+            </span>
+          </div>
+        </>
       ) : (
-        viewMode === 'tiles' ? (
-          <div className="legend-list">
-            <div className="legend-item"><span className="legend-dot dot-building" />Backend vector tile buildings</div>
-            <div className="legend-copy">Colored by energy grade from the tile properties.</div>
+        <div className="legend-list">
+          <div className="legend-item">
+            <span className="legend-dot dot-cluster-small" />
+            Small cluster / individual
           </div>
-        ) : viewMode === 'upgrade' ? (
-          <>
-            <div className="legend-copy">Upgrade priority score</div>
-            <div className="legend-gradient priority-gradient" />
-            <div className="legend-scale">
-              <span>
-                <strong>Low</strong>
-                <small>better condition</small>
-              </span>
-              <span>
-                <strong>High</strong>
-                <small>fix first</small>
-              </span>
-            </div>
-          </>
-        ) : (
-          <div className="legend-list">
-            <div className="legend-item"><span className="legend-dot dot-cluster-small" />Small cluster / individual</div>
-            <div className="legend-item"><span className="legend-dot dot-cluster-medium" />Medium cluster</div>
-            <div className="legend-item"><span className="legend-dot dot-cluster-large" />Large cluster</div>
-            <div className="legend-item"><span className="legend-dot dot-nearby" />radios result</div>
+          <div className="legend-item">
+            <span className="legend-dot dot-cluster-medium" />
+            Medium cluster
           </div>
-        )
+          <div className="legend-item">
+            <span className="legend-dot dot-cluster-large" />
+            Large cluster
+          </div>
+          <div className="legend-item">
+            <span className="legend-dot dot-nearby" />
+            radios result
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
 const MODE_DOCK_ITEMS = [
-  { value: 'markers', label: 'Markers', Icon: MapPin },
-  { value: 'heatmap', label: 'Heatmap', Icon: Flame },
-  { value: 'tiles', label: 'Tiles', Icon: Layers },
-  { value: 'upgrade', label: 'Upgrade priority', Icon: TrendingUp }
+  { value: "markers", label: "Markers", Icon: MapPin },
+  { value: "heatmap", label: "Heatmap", Icon: Flame },
+  { value: "tiles", label: "Tiles", Icon: Layers },
+  { value: "upgrade", label: "Upgrade priority", Icon: TrendingUp },
 ];
 
 function CollapsedModeDock() {
@@ -648,7 +791,7 @@ function CollapsedModeDock() {
           <button
             key={item.value}
             type="button"
-            className={`collapsed-mode-button ${viewMode === item.value ? 'active' : ''}`}
+            className={`collapsed-mode-button ${viewMode === item.value ? "active" : ""}`}
             onClick={() => setViewMode(item.value)}
             aria-label={item.label}
             aria-pressed={viewMode === item.value}
@@ -663,24 +806,27 @@ function CollapsedModeDock() {
 }
 
 function mapStyleUrlForTheme(theme) {
-  return theme === 'dark' ? DARK_MAP_STYLE_URL : LIGHT_MAP_STYLE_URL;
+  return theme === "dark" ? DARK_MAP_STYLE_URL : LIGHT_MAP_STYLE_URL;
 }
 
 function setLayerVisibility(map, layerId, visibility) {
   if (map.getLayer(layerId)) {
-    map.setLayoutProperty(layerId, 'visibility', visibility);
+    map.setLayoutProperty(layerId, "visibility", visibility);
   }
 }
 
-function syncMapDataAndVisibility(map, {
-  featureCollection,
-  heatmapCollection,
-  heatmapStats,
-  nearbyCollection,
-  nearbyCircleCollection,
-  selectedFeature,
-  viewMode
-}) {
+function syncMapDataAndVisibility(
+  map,
+  {
+    featureCollection,
+    heatmapCollection,
+    heatmapStats,
+    nearbyCollection,
+    nearbyCircleCollection,
+    selectedFeature,
+    viewMode,
+  },
+) {
   if (!map?.isStyleLoaded()) return;
 
   map.getSource(SOURCE_IDS.buildings)?.setData(featureCollection);
@@ -688,24 +834,40 @@ function syncMapDataAndVisibility(map, {
   map.getSource(SOURCE_IDS.upgradeBuildings)?.setData(featureCollection);
   map.getSource(SOURCE_IDS.nearby)?.setData(nearbyCollection);
   map.getSource(SOURCE_IDS.nearbyCircle)?.setData(nearbyCircleCollection);
-  map.getSource(SOURCE_IDS.selected)?.setData(
-    selectedFeature ? buildFeatureCollection([selectedFeature]) : buildFeatureCollection([])
-  );
+  map
+    .getSource(SOURCE_IDS.selected)
+    ?.setData(
+      selectedFeature
+        ? buildFeatureCollection([selectedFeature])
+        : buildFeatureCollection([]),
+    );
 
   if (map.getLayer(LAYER_IDS.heatmap)) {
-    map.setPaintProperty(LAYER_IDS.heatmap, 'heatmap-weight', heatmapWeightExpression(heatmapStats));
+    map.setPaintProperty(
+      LAYER_IDS.heatmap,
+      "heatmap-weight",
+      heatmapWeightExpression(heatmapStats),
+    );
   }
   if (map.getLayer(LAYER_IDS.heatmapPoints)) {
-    map.setPaintProperty(LAYER_IDS.heatmapPoints, 'circle-color', heatmapPointColorExpression(heatmapStats));
+    map.setPaintProperty(
+      LAYER_IDS.heatmapPoints,
+      "circle-color",
+      heatmapPointColorExpression(heatmapStats),
+    );
   }
   if (map.getLayer(LAYER_IDS.heatmapLocations)) {
-    map.setPaintProperty(LAYER_IDS.heatmapLocations, 'circle-color', heatmapPointColorExpression(heatmapStats));
+    map.setPaintProperty(
+      LAYER_IDS.heatmapLocations,
+      "circle-color",
+      heatmapPointColorExpression(heatmapStats),
+    );
   }
 
-  const markerVisibility = viewMode === 'markers' ? 'visible' : 'none';
-  const heatmapVisibility = viewMode === 'heatmap' ? 'visible' : 'none';
-  const tileVisibility = viewMode === 'tiles' ? 'visible' : 'none';
-  const upgradeVisibility = viewMode === 'upgrade' ? 'visible' : 'none';
+  const markerVisibility = viewMode === "markers" ? "visible" : "none";
+  const heatmapVisibility = viewMode === "heatmap" ? "visible" : "none";
+  const tileVisibility = viewMode === "tiles" ? "visible" : "none";
+  const upgradeVisibility = viewMode === "upgrade" ? "visible" : "none";
 
   setLayerVisibility(map, LAYER_IDS.clusters, markerVisibility);
   setLayerVisibility(map, LAYER_IDS.clusterCount, markerVisibility);
@@ -715,6 +877,9 @@ function syncMapDataAndVisibility(map, {
   setLayerVisibility(map, LAYER_IDS.heatmapPoints, heatmapVisibility);
   setLayerVisibility(map, LAYER_IDS.upgradePriorityPoints, upgradeVisibility);
   setLayerVisibility(map, LAYER_IDS.energyTilePoints, tileVisibility);
+  setLayerVisibility(map, LAYER_IDS.energyTileClusters, tileVisibility);
+  setLayerVisibility(map, LAYER_IDS.energyTileClusterCount, tileVisibility);
+  setLayerVisibility(map, LAYER_IDS.energyTileStats, tileVisibility);
 }
 
 function addSourceIfMissing(map, sourceId, source) {
@@ -731,247 +896,417 @@ function addLayerIfMissing(map, layer) {
 
 function addMapLayers(map) {
   addSourceIfMissing(map, SOURCE_IDS.buildings, {
-    type: 'geojson',
+    type: "geojson",
     data: buildFeatureCollection([]),
     cluster: true,
     clusterRadius: 50,
-    clusterMaxZoom: 13
+    clusterMaxZoom: 13,
   });
 
   addSourceIfMissing(map, SOURCE_IDS.heatmapBuildings, {
-    type: 'geojson',
-    data: buildFeatureCollection([])
+    type: "geojson",
+    data: buildFeatureCollection([]),
   });
 
   addSourceIfMissing(map, SOURCE_IDS.upgradeBuildings, {
-    type: 'geojson',
-    data: buildFeatureCollection([])
+    type: "geojson",
+    data: buildFeatureCollection([]),
   });
 
   addSourceIfMissing(map, SOURCE_IDS.energyTiles, {
-    type: 'vector',
+    type: "vector",
     tiles: [ENERGY_TILE_URL],
+    scheme: "xyz",
+    tileSize: 512,
     minzoom: 10,
-    maxzoom: 18
+    maxzoom: 18,
   });
 
   addLayerIfMissing(map, {
     id: LAYER_IDS.clusters,
-    type: 'circle',
+    type: "circle",
     source: SOURCE_IDS.buildings,
-    filter: ['has', 'point_count'],
+    filter: ["has", "point_count"],
     paint: {
-      'circle-color': ['step', ['get', 'point_count'], '#1a73e8', 25, '#34a853', 100, '#fbbc04'],
-      'circle-radius': ['step', ['get', 'point_count'], 18, 25, 26, 100, 34],
-      'circle-opacity': 0.88,
-      'circle-stroke-width': 2,
-      'circle-stroke-color': '#ffffff'
-    }
+      "circle-color": [
+        "step",
+        ["get", "point_count"],
+        "#1a73e8",
+        25,
+        "#34a853",
+        100,
+        "#fbbc04",
+      ],
+      "circle-radius": ["step", ["get", "point_count"], 18, 25, 26, 100, 34],
+      "circle-opacity": 0.88,
+      "circle-stroke-width": 2,
+      "circle-stroke-color": "#ffffff",
+    },
   });
 
   addLayerIfMissing(map, {
     id: LAYER_IDS.clusterCount,
-    type: 'symbol',
+    type: "symbol",
     source: SOURCE_IDS.buildings,
-    filter: ['has', 'point_count'],
+    filter: ["has", "point_count"],
     layout: {
-      'text-field': ['get', 'point_count_abbreviated'],
-      'text-font': ['Open Sans Bold'],
-      'text-size': 12
+      "text-field": ["get", "point_count_abbreviated"],
+      "text-font": ["Open Sans Bold"],
+      "text-size": 12,
     },
     paint: {
-      'text-color': '#ffffff'
-    }
+      "text-color": "#ffffff",
+    },
   });
 
   addLayerIfMissing(map, {
     id: LAYER_IDS.points,
-    type: 'circle',
+    type: "circle",
     source: SOURCE_IDS.buildings,
-    filter: ['!', ['has', 'point_count']],
+    filter: ["!", ["has", "point_count"]],
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 5, 12, 9],
-      'circle-color': '#1a73e8',
-      'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': 1.5,
-      'circle-opacity': 0.9
-    }
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 5, 12, 9],
+      "circle-color": "#1a73e8",
+      "circle-stroke-color": "#ffffff",
+      "circle-stroke-width": 1.5,
+      "circle-opacity": 0.9,
+    },
   });
 
   addLayerIfMissing(map, {
     id: LAYER_IDS.heatmap,
-    type: 'heatmap',
+    type: "heatmap",
     source: SOURCE_IDS.heatmapBuildings,
     maxzoom: 22,
-    layout: { visibility: 'none' },
+    layout: { visibility: "none" },
     paint: {
-      'heatmap-weight': ['interpolate', ['linear'], ['coalesce', ['get', 'heatmapEnergy'], 0], 0, 0.14, 60, 0.42, 180, 0.72, 420, 1],
-      'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 4, 0.48, 8, 0.68, 12, 0.82, 16, 0.9],
-      'heatmap-color': [
-        'interpolate',
-        ['linear'],
-        ['heatmap-density'],
+      "heatmap-weight": [
+        "interpolate",
+        ["linear"],
+        ["coalesce", ["get", "heatmapEnergy"], 0],
         0,
-        'rgba(56, 189, 248, 0)',
-        0.08,
-        'rgba(125, 211, 252, 0.54)',
-        0.28,
-        'rgba(45, 212, 191, 0.62)',
-        0.52,
-        'rgba(163, 230, 53, 0.68)',
-        0.74,
-        'rgba(253, 224, 71, 0.76)',
-        0.9,
-        'rgba(253, 186, 116, 0.84)',
+        0.14,
+        60,
+        0.42,
+        180,
+        0.72,
+        420,
         1,
-        'rgba(239, 68, 68, 0.92)'
       ],
-      'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 4, 16, 8, 22, 12, 30, 18, 42],
-      'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 4, 0.72, 9, 0.82, 16, 0.76, 20, 0.48]
-    }
+      "heatmap-intensity": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        4,
+        0.48,
+        8,
+        0.68,
+        12,
+        0.82,
+        16,
+        0.9,
+      ],
+      "heatmap-color": [
+        "interpolate",
+        ["linear"],
+        ["heatmap-density"],
+        0,
+        "rgba(56, 189, 248, 0)",
+        0.08,
+        "rgba(125, 211, 252, 0.54)",
+        0.28,
+        "rgba(45, 212, 191, 0.62)",
+        0.52,
+        "rgba(163, 230, 53, 0.68)",
+        0.74,
+        "rgba(253, 224, 71, 0.76)",
+        0.9,
+        "rgba(253, 186, 116, 0.84)",
+        1,
+        "rgba(239, 68, 68, 0.92)",
+      ],
+      "heatmap-radius": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        4,
+        16,
+        8,
+        22,
+        12,
+        30,
+        18,
+        42,
+      ],
+      "heatmap-opacity": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        4,
+        0.72,
+        9,
+        0.82,
+        16,
+        0.76,
+        20,
+        0.48,
+      ],
+    },
   });
 
   addLayerIfMissing(map, {
     id: LAYER_IDS.heatmapLocations,
-    type: 'circle',
+    type: "circle",
     source: SOURCE_IDS.heatmapBuildings,
-    layout: { visibility: 'none' },
+    layout: { visibility: "none" },
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 5, 8, 7, 12, 10, 16, 14],
-      'circle-color': '#2dd4bf',
-      'circle-opacity': ['interpolate', ['linear'], ['zoom'], 4, 0.42, 10, 0.5, 16, 0.34],
-      'circle-blur': ['interpolate', ['linear'], ['zoom'], 4, 1.1, 12, 0.85, 16, 0.55],
-      'circle-stroke-width': 0
-    }
+      "circle-radius": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        4,
+        5,
+        8,
+        7,
+        12,
+        10,
+        16,
+        14,
+      ],
+      "circle-color": "#2dd4bf",
+      "circle-opacity": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        4,
+        0.42,
+        10,
+        0.5,
+        16,
+        0.34,
+      ],
+      "circle-blur": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        4,
+        1.1,
+        12,
+        0.85,
+        16,
+        0.55,
+      ],
+      "circle-stroke-width": 0,
+    },
   });
 
   addLayerIfMissing(map, {
     id: LAYER_IDS.heatmapPoints,
-    type: 'circle',
+    type: "circle",
     source: SOURCE_IDS.buildings,
-    filter: ['!', ['has', 'point_count']],
+    filter: ["!", ["has", "point_count"]],
     minzoom: 11,
-    layout: { visibility: 'none' },
+    layout: { visibility: "none" },
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 3.2, 11, 5.2, 14, 7.2, 17, 9.5],
-      'circle-color': '#2dd4bf',
-      'circle-opacity': ['interpolate', ['linear'], ['zoom'], 10, 0.68, 12, 0.82, 15, 0.94],
-      'circle-stroke-color': 'rgba(255, 255, 255, 0.86)',
-      'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 10, 0.4, 14, 1.3]
-    }
+      "circle-radius": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        8,
+        3.2,
+        11,
+        5.2,
+        14,
+        7.2,
+        17,
+        9.5,
+      ],
+      "circle-color": "#2dd4bf",
+      "circle-opacity": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        10,
+        0.68,
+        12,
+        0.82,
+        15,
+        0.94,
+      ],
+      "circle-stroke-color": "rgba(255, 255, 255, 0.86)",
+      "circle-stroke-width": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        10,
+        0.4,
+        14,
+        1.3,
+      ],
+    },
   });
 
   addLayerIfMissing(map, {
     id: LAYER_IDS.upgradePriorityPoints,
-    type: 'circle',
+    type: "circle",
     source: SOURCE_IDS.upgradeBuildings,
-    layout: { visibility: 'none' },
+    layout: { visibility: "none" },
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 4, 12, 8, 16, 10],
-      'circle-color': [
-        'interpolate',
-        ['linear'],
-        ['coalesce', ['get', 'upgradeScore'], 0],
-        0,
-        '#22c55e',
-        45,
-        '#facc15',
-        75,
-        '#f97316',
-        100,
-        '#dc2626'
+      "circle-radius": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        5,
+        4,
+        12,
+        8,
+        16,
+        10,
       ],
-      'circle-opacity': 0.9,
-      'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 5, 0.8, 14, 1.6]
-    }
+      "circle-color": [
+        "interpolate",
+        ["linear"],
+        ["coalesce", ["get", "upgradeScore"], 0],
+        0,
+        "#22c55e",
+        45,
+        "#facc15",
+        75,
+        "#f97316",
+        100,
+        "#dc2626",
+      ],
+      "circle-opacity": 0.9,
+      "circle-stroke-color": "#ffffff",
+      "circle-stroke-width": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        5,
+        0.8,
+        14,
+        1.6,
+      ],
+    },
   });
 
   addLayerIfMissing(map, {
     id: LAYER_IDS.energyTilePoints,
-    type: 'circle',
+    type: "circle",
     source: SOURCE_IDS.energyTiles,
-    'source-layer': ENERGY_TILE_SOURCE_LAYER,
+    "source-layer": ENERGY_TILE_SOURCE_LAYER,
+
     minzoom: 10,
-    layout: { visibility: 'none' },
+
+    layout: { visibility: "none" },
+
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 3, 14, 5.5, 18, 8],
-      'circle-color': [
-        'match',
-        ['get', 'energikarakter'],
-        'A',
-        '#15803d',
-        'B',
-        '#22c55e',
-        'C',
-        '#84cc16',
-        'D',
-        '#facc15',
-        'E',
-        '#f97316',
-        'F',
-        '#dc2626',
-        'G',
-        '#991b1b',
-        '#64748b'
+      "circle-radius": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        10,
+        3,
+        14,
+        5.5,
+        18,
+        8,
       ],
-      'circle-opacity': 0.86,
-      'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 10, 0.7, 16, 1.4]
-    }
+
+      "circle-color": [
+        "match",
+        ["get", "energikarakter"],
+        "A",
+        "#15803d",
+        "B",
+        "#22c55e",
+        "C",
+        "#84cc16",
+        "D",
+        "#facc15",
+        "E",
+        "#f97316",
+        "F",
+        "#dc2626",
+        "G",
+        "#991b1b",
+        "#64748b",
+      ],
+
+      "circle-opacity": 0.9,
+      "circle-stroke-color": "#ffffff",
+      "circle-stroke-width": 1,
+    },
   });
 
-  addSourceIfMissing(map, SOURCE_IDS.selected, { type: 'geojson', data: buildFeatureCollection([]) });
+  addSourceIfMissing(map, SOURCE_IDS.selected, {
+    type: "geojson",
+    data: buildFeatureCollection([]),
+  });
   addLayerIfMissing(map, {
     id: LAYER_IDS.selectedHalo,
-    type: 'circle',
+    type: "circle",
     source: SOURCE_IDS.selected,
     paint: {
-      'circle-radius': 18,
-      'circle-color': 'rgba(251, 188, 4, 0.2)',
-      'circle-stroke-color': '#fbbc04',
-      'circle-stroke-width': 3
-    }
+      "circle-radius": 18,
+      "circle-color": "rgba(251, 188, 4, 0.2)",
+      "circle-stroke-color": "#fbbc04",
+      "circle-stroke-width": 3,
+    },
   });
   addLayerIfMissing(map, {
     id: LAYER_IDS.selectedPoint,
-    type: 'circle',
+    type: "circle",
     source: SOURCE_IDS.selected,
     paint: {
-      'circle-radius': 7,
-      'circle-color': '#fbbc04',
-      'circle-stroke-color': '#202124',
-      'circle-stroke-width': 2
-    }
+      "circle-radius": 7,
+      "circle-color": "#fbbc04",
+      "circle-stroke-color": "#202124",
+      "circle-stroke-width": 2,
+    },
   });
 
-  addSourceIfMissing(map, SOURCE_IDS.nearby, { type: 'geojson', data: buildFeatureCollection([]) });
+  addSourceIfMissing(map, SOURCE_IDS.nearby, {
+    type: "geojson",
+    data: buildFeatureCollection([]),
+  });
   addLayerIfMissing(map, {
     id: LAYER_IDS.nearby,
-    type: 'circle',
+    type: "circle",
     source: SOURCE_IDS.nearby,
     paint: {
-      'circle-radius': 6,
-      'circle-color': '#ea4335',
-      'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': 2
-    }
+      "circle-radius": 6,
+      "circle-color": "#ea4335",
+      "circle-stroke-color": "#ffffff",
+      "circle-stroke-width": 2,
+    },
   });
 
-  addSourceIfMissing(map, SOURCE_IDS.nearbyCircle, { type: 'geojson', data: buildFeatureCollection([]) });
+  addSourceIfMissing(map, SOURCE_IDS.nearbyCircle, {
+    type: "geojson",
+    data: buildFeatureCollection([]),
+  });
   addLayerIfMissing(map, {
     id: LAYER_IDS.nearbyCircle,
-    type: 'fill',
+    type: "fill",
     source: SOURCE_IDS.nearbyCircle,
     paint: {
-      'fill-color': '#ea4335',
-      'fill-opacity': 0.12,
-      'fill-outline-color': '#ea4335'
-    }
+      "fill-color": "#ea4335",
+      "fill-opacity": 0.12,
+      "fill-outline-color": "#ea4335",
+    },
   });
 }
 
-function MapView({ features, allFeaturesCount, selectedFeature, searchSelection, nearbyState, onMapClick, isSearchingNearby }) {
+function MapView({
+  features,
+  allFeaturesCount,
+  selectedFeature,
+  searchSelection,
+  nearbyState,
+  onMapClick,
+  isSearchingNearby,
+}) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const popupRef = useRef(null);
@@ -986,15 +1321,21 @@ function MapView({ features, allFeaturesCount, selectedFeature, searchSelection,
   const radiusInMeters = useStore((state) => state.radiusInMeters);
   const setSelectedFeature = useStore((state) => state.setSelectedFeature);
   const [zoomLevel, setZoomLevel] = useState(DEFAULT_ZOOM);
-  const featureCollection = useMemo(() => buildFeatureCollection(features), [features]);
+  const featureCollection = useMemo(
+    () => buildFeatureCollection(features),
+    [features],
+  );
   const heatmapData = useMemo(() => buildHeatmapData(features), [features]);
-  const nearbyCollection = useMemo(() => buildNearbyGeoJson(nearbyState.results), [nearbyState.results]);
+  const nearbyCollection = useMemo(
+    () => buildNearbyGeoJson(nearbyState.results),
+    [nearbyState.results],
+  );
   const nearbyCircleCollection = useMemo(() => {
     if (!nearbyState.center) return buildFeatureCollection([]);
     return buildNearbyCircleGeoJson(
       nearbyState.center.longitude,
       nearbyState.center.latitude,
-      nearbyState.radiusInMeters
+      nearbyState.radiusInMeters,
     );
   }, [nearbyState.center, nearbyState.radiusInMeters]);
   const featureCollectionRef = useRef(featureCollection);
@@ -1048,7 +1389,9 @@ function MapView({ features, allFeaturesCount, selectedFeature, searchSelection,
   useEffect(() => {
     nearbySearchEnabledRef.current = nearbySearchEnabled;
     if (mapRef.current) {
-      mapRef.current.getCanvas().style.cursor = nearbySearchEnabled ? 'crosshair' : '';
+      mapRef.current.getCanvas().style.cursor = nearbySearchEnabled
+        ? "crosshair"
+        : "";
     }
   }, [nearbySearchEnabled]);
 
@@ -1064,19 +1407,22 @@ function MapView({ features, allFeaturesCount, selectedFeature, searchSelection,
       style: mapStyleUrlRef.current,
       center: DEFAULT_CENTER,
       zoom: DEFAULT_ZOOM,
-      attributionControl: false
+      attributionControl: false,
     });
 
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
+    map.addControl(
+      new maplibregl.NavigationControl({ visualizePitch: true }),
+      "bottom-right",
+    );
     setZoomLevel(map.getZoom());
 
     const updateZoomLevel = () => {
       setZoomLevel(Number(map.getZoom().toFixed(1)));
     };
 
-    map.on('zoom', updateZoomLevel);
+    map.on("zoom", updateZoomLevel);
 
-    map.on('load', () => {
+    map.on("load", () => {
       addMapLayers(map);
       syncMapDataAndVisibility(map, {
         featureCollection: featureCollectionRef.current,
@@ -1085,63 +1431,40 @@ function MapView({ features, allFeaturesCount, selectedFeature, searchSelection,
         nearbyCollection: nearbyCollectionRef.current,
         nearbyCircleCollection: nearbyCircleCollectionRef.current,
         selectedFeature: selectedFeatureRef.current,
-        viewMode: viewModeRef.current
+        viewMode: viewModeRef.current,
       });
 
-      map.on('click', LAYER_IDS.clusters, (event) => {
-        const clusterFeature = map.queryRenderedFeatures(event.point, { layers: [LAYER_IDS.clusters] })[0];
+      map.on("click", LAYER_IDS.clusters, (event) => {
+        const clusterFeature = map.queryRenderedFeatures(event.point, {
+          layers: [LAYER_IDS.clusters],
+        })[0];
         const clusterId = clusterFeature.properties.cluster_id;
-        map.getSource(SOURCE_IDS.buildings).getClusterExpansionZoom(clusterId, (error, zoom) => {
-          if (!error) map.easeTo({ center: clusterFeature.geometry.coordinates, zoom });
-        });
+        map
+          .getSource(SOURCE_IDS.buildings)
+          .getClusterExpansionZoom(clusterId, (error, zoom) => {
+            if (!error)
+              map.easeTo({ center: clusterFeature.geometry.coordinates, zoom });
+          });
       });
 
-      map.on('click', LAYER_IDS.points, (event) => {
+      map.on("click", LAYER_IDS.heatmapPoints, (event) => {
         const feature = event.features?.[0];
         if (!feature) return;
-        const selected = findFeatureById(allFeaturesRef.current, feature.properties.id);
-        const unitsAtLocation = selected ? findUnitsAtFeatureLocation(allFeaturesRef.current, selected) : [];
-        const coordinates = selected?.geometry?.coordinates?.slice() || feature.geometry.coordinates.slice();
-        const address = selected?.properties?.adresse || feature.properties.adresse || 'Unknown address';
-        setSelectedFeature(selected || null);
-        popupRef.current?.remove();
-        popupRef.current = openPopup(
-          map,
-          coordinates,
-          unitsAtLocation.length > 1
-            ? nearbyUnitsListHtml(unitsToListPayload(unitsAtLocation), address, coordinates)
-            : popupHtmlForMode(selected?.properties || feature.properties, 'markers')
+
+        const selected = findFeatureById(
+          allFeaturesRef.current,
+          feature.properties.id,
         );
-      });
-
-      map.on('click', LAYER_IDS.heatmapPoints, (event) => {
-        const feature = event.features?.[0];
-        if (!feature) return;
-
-        const selected = findFeatureById(allFeaturesRef.current, feature.properties.id);
-        const unitsAtLocation = selected ? findUnitsAtFeatureLocation(allFeaturesRef.current, selected) : [];
-        const coordinates = selected?.geometry?.coordinates?.slice() || feature.geometry.coordinates.slice();
-        const address = selected?.properties?.adresse || feature.properties.adresse || 'Unknown address';
-
-        setSelectedFeature(selected || null);
-        popupRef.current?.remove();
-        popupRef.current = openPopup(
-          map,
-          coordinates,
-          unitsAtLocation.length > 1
-            ? nearbyUnitsListHtml(unitsToListPayload(unitsAtLocation), address, coordinates)
-            : popupHtmlForMode(selected?.properties || feature.properties, 'heatmap')
-        );
-      });
-
-      map.on('click', LAYER_IDS.upgradePriorityPoints, (event) => {
-        const feature = event.features?.[0];
-        if (!feature) return;
-
-        const selected = findFeatureById(allFeaturesRef.current, feature.properties.id);
-        const unitsAtLocation = selected ? findUnitsAtFeatureLocation(allFeaturesRef.current, selected) : [];
-        const coordinates = selected?.geometry?.coordinates?.slice() || feature.geometry.coordinates.slice();
-        const address = selected?.properties?.adresse || feature.properties.adresse || 'Unknown address';
+        const unitsAtLocation = selected
+          ? findUnitsAtFeatureLocation(allFeaturesRef.current, selected)
+          : [];
+        const coordinates =
+          selected?.geometry?.coordinates?.slice() ||
+          feature.geometry.coordinates.slice();
+        const address =
+          selected?.properties?.adresse ||
+          feature.properties.adresse ||
+          "Unknown address";
 
         setSelectedFeature(selected || null);
         popupRef.current?.remove();
@@ -1149,53 +1472,123 @@ function MapView({ features, allFeaturesCount, selectedFeature, searchSelection,
           map,
           coordinates,
           unitsAtLocation.length > 1
-            ? nearbyUnitsListHtml(unitsToListPayload(unitsAtLocation), address, coordinates)
-            : popupHtmlForMode(selected?.properties || feature.properties, 'upgrade')
+            ? nearbyUnitsListHtml(
+                unitsToListPayload(unitsAtLocation),
+                address,
+                coordinates,
+              )
+            : popupHtmlForMode(
+                selected?.properties || feature.properties,
+                "heatmap",
+              ),
         );
       });
 
-      map.on('click', LAYER_IDS.energyTilePoints, (event) => {
+      map.on("click", LAYER_IDS.upgradePriorityPoints, (event) => {
         const feature = event.features?.[0];
         if (!feature) return;
 
-        const properties = tilePropertiesToPopupProperties(feature.properties);
+        const selected = findFeatureById(
+          allFeaturesRef.current,
+          feature.properties.id,
+        );
+        const unitsAtLocation = selected
+          ? findUnitsAtFeatureLocation(allFeaturesRef.current, selected)
+          : [];
+        const coordinates =
+          selected?.geometry?.coordinates?.slice() ||
+          feature.geometry.coordinates.slice();
+        const address =
+          selected?.properties?.adresse ||
+          feature.properties.adresse ||
+          "Unknown address";
+
+        setSelectedFeature(selected || null);
         popupRef.current?.remove();
         popupRef.current = openPopup(
           map,
-          event.lngLat.toArray(),
-          popupHtml(properties)
+          coordinates,
+          unitsAtLocation.length > 1
+            ? nearbyUnitsListHtml(
+                unitsToListPayload(unitsAtLocation),
+                address,
+                coordinates,
+              )
+            : popupHtmlForMode(
+                selected?.properties || feature.properties,
+                "upgrade",
+              ),
         );
       });
 
-      // Add delegated click handler for unit selection at the document level
+      map.on("click", LAYER_IDS.energyTilePoints, (event) => {
+        const feature = event.features?.[0];
+        if (!feature) return;
+
+        const id = feature.properties.id;
+
+        const selected = findFeatureById(allFeaturesRef.current, id);
+
+        const unitsAtLocation = selected
+          ? findUnitsAtFeatureLocation(allFeaturesRef.current, selected)
+          : [];
+
+        const coordinates =
+          selected?.geometry?.coordinates?.slice() ||
+          feature.geometry.coordinates.slice();
+
+        const address =
+          selected?.properties?.adresse ||
+          feature.properties.adresse ||
+          "Unknown address";
+
+        setSelectedFeature(selected || null);
+
+        popupRef.current?.remove();
+
+        popupRef.current = openPopup(
+          map,
+          coordinates,
+          unitsAtLocation.length > 1
+            ? nearbyUnitsListHtml(
+                unitsToListPayload(unitsAtLocation),
+                address,
+                coordinates,
+              )
+            : popupHtmlForMode(
+                selected?.properties ||
+                  tilePropertiesToPopupProperties(feature.properties),
+                "markers",
+              ),
+        );
+      });
+
       const handleUnitSelection = (e) => {
-        const unitItem = e.target.closest('.nearby-unit-item');
+        const unitItem = e.target.closest(".nearby-unit-item");
         if (!unitItem) return;
-        
+
         e.preventDefault();
         e.stopPropagation();
-        
-        const coordinateId = unitItem.getAttribute('data-coordinateid');
-        const popupCard = unitItem.closest('.popup-card-units');
-        const lng = popupCard?.getAttribute('data-lng');
-        const lat = popupCard?.getAttribute('data-lat');
-        
+
+        const coordinateId = unitItem.getAttribute("data-coordinateid");
+        const popupCard = unitItem.closest(".popup-card-units");
+        const lng = popupCard?.getAttribute("data-lng");
+        const lat = popupCard?.getAttribute("data-lat");
+
         const selected = findFeatureById(allFeaturesRef.current, coordinateId);
-        
+
         if (selected) {
           setSelectedFeature(selected);
-          // Ensure the current popup is fully removed
           if (popupRef.current) {
             popupRef.current.remove();
             popupRef.current = null;
           }
-          
-          // Use a small delay to ensure removal is complete
+
           setTimeout(() => {
             popupRef.current = openPopup(
               map,
               [parseFloat(lng) || 0, parseFloat(lat) || 0],
-              popupHtmlForMode(selected.properties, viewModeRef.current)
+              popupHtmlForMode(selected.properties, viewModeRef.current),
             );
           }, 100);
         }
@@ -1205,83 +1598,116 @@ function MapView({ features, allFeaturesCount, selectedFeature, searchSelection,
         if (!popupRef.current) return;
         const popupElement = popupRef.current.getElement();
         if (popupElement?.contains(event.target)) return;
-        if (event.target.closest('.sidebar-shell, .collapsed-mode-dock, .top-overlay')) return;
+        if (
+          event.target.closest(
+            ".sidebar-shell, .collapsed-mode-dock, .top-overlay",
+          )
+        )
+          return;
 
         popupRef.current.remove();
         popupRef.current = null;
         setSelectedFeature(null);
       };
-      
-      // Use capture because MapLibre popups can stop bubbling before document sees the click.
-      document.addEventListener('click', handleUnitSelection, true);
-      document.addEventListener('mousedown', handlePopupOutsideClick, true);
-      
-      // Store cleanup function
+
+      document.addEventListener("click", handleUnitSelection, true);
+      document.addEventListener("mousedown", handlePopupOutsideClick, true);
+
       const cleanup = () => {
-        document.removeEventListener('click', handleUnitSelection, true);
-        document.removeEventListener('mousedown', handlePopupOutsideClick, true);
+        document.removeEventListener("click", handleUnitSelection, true);
+        document.removeEventListener(
+          "mousedown",
+          handlePopupOutsideClick,
+          true,
+        );
       };
-      
+
       mapRef.current._cleanup = cleanup;
 
-      map.on('click', LAYER_IDS.nearby, (event) => {
+      map.on("click", LAYER_IDS.nearby, (event) => {
         const feature = event.features?.[0];
         if (!feature) return;
-        
+
         const unitCount = feature.properties.unitCount ?? 1;
         popupRef.current?.remove();
-        
+
         if (unitCount > 1) {
-          // Show list of units
-          // Get address from the first unit's building
           const parsedUnits = JSON.parse(feature.properties.units);
           const firstBuildingId = parsedUnits[0]?.id;
           const firstBuilding = firstBuildingId
             ? findFeatureById(allFeaturesRef.current, firstBuildingId)
             : null;
-          const address = firstBuilding?.properties?.adresse || 'Unknown address';
-          const enrichedUnits = parsedUnits.map((unit) => findFeatureById(allFeaturesRef.current, unit.id) || unit);
-          
-          // Store a reference to the current feature for the event handler
-          const currentFeatureCoordinates = feature.geometry.coordinates.slice();
-          
+          const address =
+            firstBuilding?.properties?.adresse || "Unknown address";
+          const enrichedUnits = parsedUnits.map(
+            (unit) => findFeatureById(allFeaturesRef.current, unit.id) || unit,
+          );
+
+          const currentFeatureCoordinates =
+            feature.geometry.coordinates.slice();
+
           popupRef.current = openPopup(
             map,
             currentFeatureCoordinates,
-            nearbyUnitsListHtml(unitsToListPayload(enrichedUnits), address, currentFeatureCoordinates)
+            nearbyUnitsListHtml(
+              unitsToListPayload(enrichedUnits),
+              address,
+              currentFeatureCoordinates,
+            ),
           );
         } else {
-          // Single unit - show full building info
-          const selected = findFeatureById(allFeaturesRef.current, feature.properties.coordinateid);
+          const selected = findFeatureById(
+            allFeaturesRef.current,
+            feature.properties.coordinateid,
+          );
           setSelectedFeature(selected || null);
           popupRef.current = openPopup(
             map,
             feature.geometry.coordinates.slice(),
-            selected ? popupHtml(selected.properties) : nearbyPopupHtml(feature.properties)
+            selected
+              ? popupHtml(selected.properties)
+              : nearbyPopupHtml(feature.properties),
           );
         }
       });
 
-      map.on('click', (event) => {
-        const hits = map.queryRenderedFeatures(event.point, { layers: [LAYER_IDS.clusters, LAYER_IDS.points, LAYER_IDS.heatmapPoints, LAYER_IDS.upgradePriorityPoints, LAYER_IDS.energyTilePoints, LAYER_IDS.nearby] });
+      const clickableLayers = [
+        LAYER_IDS.points,
+        LAYER_IDS.heatmapPoints,
+        LAYER_IDS.upgradePriorityPoints,
+        LAYER_IDS.energyTilePoints,
+        LAYER_IDS.nearby,
+      ];
+
+      map.on("click", (event) => {
+        const hits = map.queryRenderedFeatures(event.point, {
+          layers: clickableLayers,
+        });
+
         if (hits.length > 0) return;
+
         popupRef.current?.remove();
         popupRef.current = null;
         setSelectedFeature(null);
+
         if (!nearbySearchEnabledRef.current) return;
+
         mapClickRef.current({
           latitude: Number(event.lngLat.lat.toFixed(6)),
           longitude: Number(event.lngLat.lng.toFixed(6)),
-          radiusInMeters: radiusInMetersRef.current
+          radiusInMeters: radiusInMetersRef.current,
         });
       });
 
-      [LAYER_IDS.clusters, LAYER_IDS.points, LAYER_IDS.heatmapPoints, LAYER_IDS.upgradePriorityPoints, LAYER_IDS.energyTilePoints, LAYER_IDS.nearby].forEach((layerId) => {
-        map.on('mouseenter', layerId, () => {
-          map.getCanvas().style.cursor = 'pointer';
+      clickableLayers.forEach((layerId) => {
+        map.on("mouseenter", layerId, () => {
+          map.getCanvas().style.cursor = "pointer";
         });
-        map.on('mouseleave', layerId, () => {
-          map.getCanvas().style.cursor = nearbySearchEnabledRef.current ? 'crosshair' : '';
+
+        map.on("mouseleave", layerId, () => {
+          map.getCanvas().style.cursor = nearbySearchEnabledRef.current
+            ? "crosshair"
+            : "";
         });
       });
     });
@@ -1290,7 +1716,7 @@ function MapView({ features, allFeaturesCount, selectedFeature, searchSelection,
     return () => {
       popupRef.current?.remove();
       mapRef.current?._cleanup?.();
-      map.off('zoom', updateZoomLevel);
+      map.off("zoom", updateZoomLevel);
       map.remove();
       mapRef.current = null;
     };
@@ -1304,9 +1730,11 @@ function MapView({ features, allFeaturesCount, selectedFeature, searchSelection,
     if (mapStyleUrlRef.current === nextStyleUrl) return;
 
     mapStyleUrlRef.current = nextStyleUrl;
-    map.once('style.load', () => {
+    map.once("style.load", () => {
       const activePopup = popupRef.current;
-      const popupState = activePopup?.isOpen?.() ? activePopup._energimerkingState : null;
+      const popupState = activePopup?.isOpen?.()
+        ? activePopup._energimerkingState
+        : null;
       if (activePopup && !activePopup.isOpen?.()) {
         popupRef.current = null;
       }
@@ -1320,16 +1748,20 @@ function MapView({ features, allFeaturesCount, selectedFeature, searchSelection,
           nearbyCollection: nearbyCollectionRef.current,
           nearbyCircleCollection: nearbyCircleCollectionRef.current,
           selectedFeature: selectedFeatureRef.current,
-          viewMode: viewModeRef.current
+          viewMode: viewModeRef.current,
         });
       };
 
       restoreMapOverlays();
       if (popupState) {
         popupRef.current?.remove();
-        popupRef.current = openPopup(map, popupState.coordinates, popupState.html);
+        popupRef.current = openPopup(
+          map,
+          popupState.coordinates,
+          popupState.html,
+        );
       }
-      map.once('idle', restoreMapOverlays);
+      map.once("idle", restoreMapOverlays);
     });
     map.setStyle(nextStyleUrl, { diff: false });
   }, [theme]);
@@ -1344,9 +1776,16 @@ function MapView({ features, allFeaturesCount, selectedFeature, searchSelection,
       nearbyCollection,
       nearbyCircleCollection,
       selectedFeature,
-      viewMode
+      viewMode,
     });
-  }, [featureCollection, heatmapData, nearbyCollection, nearbyCircleCollection, selectedFeature, viewMode]);
+  }, [
+    featureCollection,
+    heatmapData,
+    nearbyCollection,
+    nearbyCircleCollection,
+    selectedFeature,
+    viewMode,
+  ]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1363,7 +1802,7 @@ function MapView({ features, allFeaturesCount, selectedFeature, searchSelection,
       center: selectedFeature.geometry.coordinates,
       zoom: Math.max(map.getZoom(), 14),
       duration: 1200,
-      essential: true
+      essential: true,
     });
   }, [selectedFeature]);
 
@@ -1371,20 +1810,30 @@ function MapView({ features, allFeaturesCount, selectedFeature, searchSelection,
     const map = mapRef.current;
     if (!map?.isStyleLoaded() || !searchSelection?.featureId) return;
 
-    const searchedFeature = findFeatureById(allFeaturesRef.current, searchSelection.featureId);
+    const searchedFeature = findFeatureById(
+      allFeaturesRef.current,
+      searchSelection.featureId,
+    );
     if (!searchedFeature) return;
 
-    const unitsAtLocation = findUnitsAtFeatureLocation(allFeaturesRef.current, searchedFeature);
+    const unitsAtLocation = findUnitsAtFeatureLocation(
+      allFeaturesRef.current,
+      searchedFeature,
+    );
     const coordinates = searchedFeature.geometry.coordinates.slice();
-    const address = searchedFeature.properties?.adresse || 'Unknown address';
+    const address = searchedFeature.properties?.adresse || "Unknown address";
 
     popupRef.current?.remove();
     popupRef.current = openPopup(
       map,
       coordinates,
       unitsAtLocation.length > 1
-        ? nearbyUnitsListHtml(unitsToListPayload(unitsAtLocation), address, coordinates)
-        : popupHtml(searchedFeature.properties)
+        ? nearbyUnitsListHtml(
+            unitsToListPayload(unitsAtLocation),
+            address,
+            coordinates,
+          )
+        : popupHtml(searchedFeature.properties),
     );
   }, [searchSelection]);
 
@@ -1399,17 +1848,78 @@ function MapView({ features, allFeaturesCount, selectedFeature, searchSelection,
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || hasFittedRef.current || allFeaturesCount === 0 || features.length === 0) return;
-    const coordinates = features.map((feature) => feature.geometry.coordinates);
-    const bounds = coordinates.reduce(
-      (accumulator, coordinate) => accumulator.extend(coordinate),
-      new maplibregl.LngLatBounds(coordinates[0], coordinates[0])
-    );
-    map.fitBounds(bounds, {
-      padding: { top: 140, right: 80, bottom: 80, left: 420 },
-      duration: 1400,
-      maxZoom: 12
-    });
+    if (
+      !map ||
+      hasFittedRef.current ||
+      allFeaturesCount === 0 ||
+      features.length === 0
+    )
+      return;
+
+    const coordinates = features
+      .map((feature) => feature.geometry.coordinates)
+      .filter(
+        (coordinate) =>
+          Array.isArray(coordinate) &&
+          coordinate.length === 2 &&
+          Number.isFinite(coordinate[0]) &&
+          Number.isFinite(coordinate[1]),
+      );
+
+    const uniqueCoordinates = [];
+    const seen = new Set();
+    for (const coordinate of coordinates) {
+      const key = `${coordinate[0]},${coordinate[1]}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueCoordinates.push(coordinate);
+      }
+    }
+
+    if (uniqueCoordinates.length === 0) return;
+
+    const container = map.getContainer();
+    const mapWidth = container.clientWidth;
+    const mapHeight = container.clientHeight;
+    const maxHorizontalPadding = Math.max(0, mapWidth - 20);
+    const maxVerticalPadding = Math.max(0, mapHeight - 20);
+    const horizontalPadding = Math.min(420 + 80, maxHorizontalPadding);
+    const verticalPadding = Math.min(140 + 80, maxVerticalPadding);
+    const padding = {
+      left: Math.min(420, horizontalPadding),
+      right: Math.min(80, horizontalPadding - Math.min(420, horizontalPadding)),
+      top: Math.min(140, verticalPadding),
+      bottom: Math.min(80, verticalPadding - Math.min(140, verticalPadding)),
+    };
+
+    if (uniqueCoordinates.length < 2) {
+      map.flyTo({
+        center: uniqueCoordinates[0],
+        zoom: 12,
+        duration: 1400,
+        essential: true,
+      });
+    } else {
+      const bounds = uniqueCoordinates.reduce(
+        (accumulator, coordinate) => accumulator.extend(coordinate),
+        new maplibregl.LngLatBounds(uniqueCoordinates[0], uniqueCoordinates[0]),
+      );
+      try {
+        map.fitBounds(bounds, {
+          padding,
+          duration: 1400,
+          maxZoom: 12,
+        });
+      } catch (error) {
+        map.flyTo({
+          center: uniqueCoordinates[0],
+          zoom: 12,
+          duration: 1400,
+          essential: true,
+        });
+      }
+    }
+
     hasFittedRef.current = true;
   }, [allFeaturesCount, features]);
 
@@ -1419,7 +1929,7 @@ function MapView({ features, allFeaturesCount, selectedFeature, searchSelection,
       <CollapsedModeDock />
       <div className="zoom-readout">
         Zoom {zoomLevel.toFixed(1)}
-        {viewMode === 'tiles' && zoomLevel < 10 && (
+        {viewMode === "tiles" && zoomLevel < 10 && (
           <span>Tiles appear at 10+</span>
         )}
       </div>
@@ -1432,12 +1942,14 @@ function MapView({ features, allFeaturesCount, selectedFeature, searchSelection,
         )}
         {isSearchingNearby && (
           <div className="map-pill">
-            Finding nearby buildings within {radiusInMeters.toLocaleString()} m...
+            Finding nearby buildings within {radiusInMeters.toLocaleString()}{" "}
+            m...
           </div>
         )}
         {nearbyState.results.length > 0 && (
           <div className="map-pill">
-            <strong>{nearbyState.results.length}</strong> nearby loaded coordinates
+            <strong>{nearbyState.results.length}</strong> nearby loaded
+            coordinates
           </div>
         )}
       </div>

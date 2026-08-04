@@ -38,7 +38,7 @@ public partial class DenormMatrikkelOgEnovaOslo
 
     public string? Oppvarmingskarakter { get; set; }
 
-    public string? BeregnetLevertEnergiTotaltkWhm2 { get; set; }
+    public decimal? BeregnetLevertEnergiTotaltkWhm2 { get; set; }
 
     public string? Matierialvalg { get; set; }
 
