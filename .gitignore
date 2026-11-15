@@ -485,3 +485,8 @@ $RECYCLE.BIN/
 
 # Claude Code: automatisk agentlogg
 docs/logg/aktivitet.log
+
+# Claude Code: personlige filer (hooken kjører bare hos den som har satt den opp)
+.claude/settings.local.json
+.claude/hooks/
+.claude/worktrees/
