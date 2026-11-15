@@ -2,6 +2,10 @@
 
 Kort logg over valg som er viktige eller dyre å endre. Nyeste øverst.
 
+## 2026-11-15: Adresse er med i enhetsnøkkelen
+**Beslutning:** En enhet er bygningsnummer + bruksenhetsnummer + adresse.
+**Hvorfor:** `sql-agent` fant at bruksenhetsnummer (f.eks. H0101) gjentas på hver inngang i samme bygg. Uten adresse ble ulike leiligheter slått sammen: 67 351 enheter i gammel ordning og 11 287 i ny. Med adresse blir det 108 107 og 13 429.
+
 ## 2026-11-15: Faglige regler avgjort
 **Beslutning:**
 - Enhet i statistikk er bruksenheten (bygningsnummer + bruksenhetsnummer), med siste attest per enhet.

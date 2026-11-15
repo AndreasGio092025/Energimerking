@@ -14,8 +14,8 @@ Bindende fra 2026-11-15 (avgjort av eieren, se `docs/beslutninger.md`).
 
 **Enheter vs attester**
 - En attest (`Attestnummer`) er én utstedelse fra Enova. En bruksenhet kan ha flere attester over tid.
-- Enheten i statistikk er **bruksenheten** (leiligheten), identifisert med bygningsnummer + bruksenhetsnummer. Bygg uten bruksenhetsnummer teller som én enhet.
-- Statistikk teller *enheter*, ikke attester: bruk siste attest per bruksenhet (høyeste `Utstedelsesdato`).
+- Enheten i statistikk er **bruksenheten** (leiligheten), identifisert med bygningsnummer + bruksenhetsnummer + adresse (`enhet_id` i `v_attester`). Adressen må med fordi samme bruksenhetsnummer (f.eks. H0101) går igjen på hver inngang i et bygg. Uten bruksenhetsnummer er enheten bygningsnummer + adresse.
+- Statistikk teller *enheter*, ikke attester: bruk siste attest per enhet (høyeste utstedelsestidspunkt), som i `mv_siste_attest_per_enhet`.
 - Skriv alltid i tekst og API om et tall er "antall enheter" eller "antall attester".
 
 **Ordning blandet**

@@ -62,12 +62,15 @@ SELECT
     s.utstedt_tidspunkt                           AS utstedt_tidspunkt,
     s.bygningsnummer,
     s.bruksenhetsnummer,
-    -- Enhet = bruksenhet. Uten bruksenhetsnummer brukes bare bygningsnummer. Uten bygningsnummer
-    -- kan vi ikke identifisere enheten, så enhet_id blir NULL (og attesten telles ikke som enhet).
+    -- Enhet = bruksenhet på en bestemt adresse. Bruksenhetsnummer (f.eks. H0101) gjentas på hver
+    -- inngang i samme bygg (34E og 34F har begge H0101), så adressen må med for å skille leilighetene.
+    -- Adressen normaliseres (små bokstaver, uten ekstra mellomrom) så skrivemåte ikke lager nye enheter.
+    -- Uten bygningsnummer kan vi ikke identifisere enheten, så enhet_id blir NULL.
     CASE
         WHEN s.bygningsnummer IS NULL THEN NULL
-        WHEN s.bruksenhetsnummer IS NULL THEN s.bygningsnummer
-        ELSE s.bygningsnummer || '-' || s.bruksenhetsnummer
+        ELSE s.bygningsnummer
+             || '|' || coalesce(s.bruksenhetsnummer, '')
+             || '|' || coalesce(lower(regexp_replace(trim(s.adresse), '\s+', ' ', 'g')), '')
     END                                           AS enhet_id,
     s.adresse,
     s.bygningskategori,
@@ -85,4 +88,4 @@ FROM samlet s
 LEFT JOIN oppvarmingskarakter ok ON lower(ok.kode) = lower(s.oppvarming_raa);
 
 COMMENT ON VIEW v_attester IS
-  'Én rad per Oslo-attest fra 2025-denorm og 2026-energiattester. enhet_id = bygningsnummer[-bruksenhetsnummer]; ordning fra utstedelsesdato.';
+  'Én rad per Oslo-attest fra 2025-denorm og 2026-energiattester. enhet_id = bygningsnummer|bruksenhetsnummer|adresse; ordning fra utstedelsesdato.';
