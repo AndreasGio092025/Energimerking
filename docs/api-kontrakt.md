@@ -5,7 +5,7 @@ Andre API-er: `api/bygg` (`CoordinateController`), `api/bydel-stats` (`BydelStat
 Endrer du et felt: oppdater denne filen først, og skriv det i rapporten din.
 
 ## Bygg-oversikt (`api/bygg-oversikt`)
-Status: til godkjenning (2026-11-15).
+Status: godkjent av eieren 2026-11-15.
 
 Ruter (`ByggOversiktController`), begge returnerer rå JSON fra SQL-funksjoner i
 `Backend/Docker/db-init/07_bygg_oversikt.sql`:
