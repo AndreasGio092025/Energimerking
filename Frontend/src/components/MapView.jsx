@@ -877,8 +877,11 @@ function setLayerVisibility(map, layerId, visibility) {
   }
 }
 
-const MIN_TILE_ZOOM = 10;
-const MAX_TILE_SOURCE_ZOOM = 22;
+// Fra zoom 14 har ingen tile i Oslo flere bygg enn backendens tak (8000), så alle bygg vises.
+// Under 14 ville taket kutte 50-95 % av byggene i klumper (målt 2026-11-15).
+const MIN_TILE_ZOOM = 14;
+// Over 15 strekker kartet tilene fra zoom 15 (maks ca. 2800 bygg per tile) i stedet for å hente nye.
+const MAX_TILE_SOURCE_ZOOM = 15;
 const TILE_SOURCE_LAYER = "points";
 const TILE_DETAIL_BOUNDS_PADDING_DEGREES = 0.00008;
 const TILE_DETAIL_FALLBACK_AMOUNT = 250;
@@ -2174,9 +2177,14 @@ function MapView({
   useEffect(() => {
     const map = mapRef.current;
     if (!map?.isStyleLoaded() || !selectedBydel) return;
+    const bydelZoom = selectedBydel.zoom || 11;
     map.easeTo({
       center: [selectedBydel.longitude, selectedBydel.latitude],
-      zoom: selectedBydel.zoom || 11,
+      // I «Enkel bygg» vises byggene først fra MIN_TILE_ZOOM; ellers blir kartet tomt.
+      zoom:
+        viewModeRef.current === "tiles"
+          ? Math.max(bydelZoom, MIN_TILE_ZOOM)
+          : bydelZoom,
       duration: 900,
       essential: true,
     });
@@ -2189,6 +2197,11 @@ function MapView({
       <div className="zoom-readout">Zoom {zoomLevel.toFixed(1)}</div>
       <div className="map-floating">
         {viewMode !== "tiles" && <MapLegend heatmapStats={heatmapData.stats} />}
+        {viewMode === "tiles" && zoomLevel < MIN_TILE_ZOOM && (
+          <div className="map-pill is-hint">
+            Zoom inn for å se byggene
+          </div>
+        )}
         {nearbySearchEnabled && (
           <div className="map-pill is-hint">
             Click the map to search within {radiusInMeters.toLocaleString()} m
