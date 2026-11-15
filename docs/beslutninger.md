@@ -2,6 +2,15 @@
 
 Kort logg over valg som er viktige eller dyre å endre. Nyeste øverst.
 
+## 2026-11-15: Faglige regler avgjort
+**Beslutning:**
+- Enhet i statistikk er bruksenheten (bygningsnummer + bruksenhetsnummer), med siste attest per enhet.
+- Ordning går på utstedelsesdato: før 2026-01-01 er gammel ordning, fra og med er ny.
+- Kohorter etter byggtekniske forskrifter: før 1949, 1949–69, 1970–86, 1987–96, 1997–2006, 2007–16, 2017+.
+- Minst 10 enheter i en kohort før sammenligning vises.
+
+**Hvorfor:** Borettslag og sameier har én attest per leilighet, så bygning som enhet ville skjult forskjeller. Dataene viser at 2025-attester har oppvarmingskarakter og 2026-attester (fra 7. jan.) ikke har det, så datoskillet stemmer med dataene og krever ikke et eget felt. Forskriftene markerer når kravene til bygg endret seg. 10 er nok til å unngå de minste gruppene uten å skjule de fleste områder.
+
 ## 2026-11-13: Hovedsesjonen er orkestrator
 **Beslutning:** Eieren og hovedsesjonen planlegger og fordeler arbeid; det finnes ingen egen orkestrator-agent.
 **Hvorfor:** Subagenter kan ikke starte andre subagenter, og eieren vil ha innsyn og eierskap.

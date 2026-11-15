@@ -10,26 +10,27 @@ Se `README.md` for oppsett og kjøring.
 - `docs/`: API-kontrakt, beslutninger og agentlogg
 
 ## Faglige regler
-Utkast 2026-11-14. Punkter merket **ÅPENT** må eieren avgjøre før reglene er bindende.
+Bindende fra 2026-11-15 (avgjort av eieren, se `docs/beslutninger.md`).
 
 **Enheter vs attester**
-- En attest (`Attestnummer`) er én utstedelse fra Enova. En enhet (bygning eller bruksenhet) kan ha flere attester over tid.
-- Statistikk teller *enheter*, ikke attester: bruk siste attest per enhet (høyeste `Utstedelsesdato`), slik `mv_leilighet_siste_energimerke` gjør med `rn = 1`.
+- En attest (`Attestnummer`) er én utstedelse fra Enova. En bruksenhet kan ha flere attester over tid.
+- Enheten i statistikk er **bruksenheten** (leiligheten), identifisert med bygningsnummer + bruksenhetsnummer. Bygg uten bruksenhetsnummer teller som én enhet.
+- Statistikk teller *enheter*, ikke attester: bruk siste attest per bruksenhet (høyeste `Utstedelsesdato`).
 - Skriv alltid i tekst og API om et tall er "antall enheter" eller "antall attester".
-- **ÅPENT:** Er enheten bruksenhet (leilighet) eller bygning når vi lager bydels- og byggstatistikk?
 
 **Ordning blandet**
 - Energimerkeordningen endres i 2026. Karakterer fra gammel og ny ordning er ikke samme skala.
+- **Gammel ordning:** utstedt før 2026-01-01. **Ny ordning:** utstedt 2026-01-01 eller senere. Skillet går på `Utstedelsesdato`, ikke på tabell eller kilde.
 - Bland aldri gammel og ny ordning i samme gjennomsnitt, fordeling eller sammenligning. Vis dem hver for seg, eller bruk overgangsnøkkelen når den finnes.
 - Alle spørringer og API-felter med karakterer skal vite hvilken ordning attesten hører til.
-- **ÅPENT:** Hva skiller ordningene i dataene (utstedelsesdato fra og med en gitt dag, eller et eget felt i Enova-filen)?
+- Ny ordning har ikke oppvarmingskarakter; den er da tom (NULL), ikke en egen verdi.
 
 **Kohortgrenser**
 - "Lignende bygg" betyr samme bygningskategori og samme byggeårskohort.
+- Kohortene følger byggtekniske forskrifter: før 1949, 1949–1969, 1970–1986, 1987–1996, 1997–2006, 2007–2016, 2017 og senere.
 - Kohortgrensene står ett sted (SQL) og brukes likt i SQL og frontend; ikke lag nye grenser i nettleseren.
-- Bygg uten `Byggeaar` havner ikke i noen kohort og telles ikke som "lignende".
-- **ÅPENT:** Hvilke grenser? Forslag: etter byggtekniske forskrifter (før 1949, 1949–1969, 1970–1986, 1987–1996, 1997–2006, 2007–2016, 2017 og senere).
-- **ÅPENT:** Minste antall bygg i en kohort før vi viser sammenligning (forslag: 10).
+- Bygg uten gyldig byggeår (mangler, 0 eller før 1800) havner ikke i noen kohort og telles ikke som "lignende".
+- Sammenligning vises bare når kohorten har minst **10 enheter**; ellers skriv at det er for få lignende bygg.
 
 ## Språk
 Brukergrensesnitt og tekst til brukere er **norsk (bokmål)**. Kode, variabler og commit-meldinger kan være engelsk eller norsk, men vær konsekvent i hver fil.
