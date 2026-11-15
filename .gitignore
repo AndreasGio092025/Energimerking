@@ -482,3 +482,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Claude Code: automatisk agentlogg
+docs/logg/aktivitet.log
