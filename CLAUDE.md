@@ -73,4 +73,4 @@ Store beslutninger (datamodell, faglige tolkninger, valg som er dyre å endre) s
 ## Kjente åpne punkter
 - `WebApi.csproj` har `Microsoft.NET.Sdk.web` (liten w); må være `Web` for Linux.
 - `energimerke.oppvarmingskarakter` er NOT NULL og blokkerer import av 2026-attester.
-- **Neste oppgave (eieren 2026-11-16):** kartet og statistikkpanelet teller attester fra `denorm_matrikkel_og_enova_oslo`, ikke enheter. Teksten sier nå «attester». Riktig telling av enheter og bygg bør hentes fra `mv_siste_attest_per_enhet` (SQL + API + frontend, egen plan).
+- **Neste oppgave (eieren 2026-11-16):** kartpunktene og statistikkpanelet viser én enhet per eiendom med siste attest, men enhetsnøkkelen i frontend følger ikke regelen (matrikkel/seksjon i stedet for bygningsnummer, og `latestOnly` i `filtering.js` mangler adresse). Panelet gjelder bare de inntil 20 000 attestene som er lastet inn rundt bydelen, og vil blande gammel og ny ordning når 2026-attester kommer inn i kartet. Erstatt med tall fra `mv_siste_attest_per_enhet`, delt på ordning (SQL + API + frontend, egen plan). «Enkel bygg» (vektor-tiles) viser én prikk per attest.
