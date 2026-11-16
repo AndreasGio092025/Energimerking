@@ -338,9 +338,9 @@ function BydelStat({ label, value }) {
 function BydelStatsPanel({ bydelStats, externalBydelStats, externalBydelStatus }) {
   return (
     <div className="bydel-stats-grid">
-      <BydelStatSection Icon={Database}>Statistikk for innlastede attester</BydelStatSection>
-      <div className="bydel-stat-note">Tallene gjelder attestene som er lastet inn i kartet. En enhet kan ha flere attester.</div>
-      <BydelStat label="Antall attester" value={bydelStats.total.toLocaleString()} />
+      <BydelStatSection Icon={Database}>Statistikk for innlastede enheter</BydelStatSection>
+      <div className="bydel-stat-note">Hver enhet telles én gang, med siste attest. Tallene gjelder bare det som er lastet inn i kartet, ikke hele bydelen.</div>
+      <BydelStat label="Antall enheter" value={bydelStats.total.toLocaleString()} />
       <BydelStat label="Gjennomsnittlig beregnet levert energi" value={formatEnergy(bydelStats.averageEnergy)} />
       <BydelStat label="Typisk beregnet levert energi (median)" value={formatEnergy(bydelStats.medianEnergy)} />
       <BydelStat label="Vanligste energikarakter" value={bydelStats.mostCommonEnergyGrade} />

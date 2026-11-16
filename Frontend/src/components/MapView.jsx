@@ -623,7 +623,7 @@ function nearbyPopupHtml(properties) {
   `;
 
   if (unitCount > 1) {
-    html += `<div class="popup-grid"><div class="popup-metric"><span>Antall attester</span><strong>${unitCount}</strong></div></div>`;
+    html += `<div class="popup-grid"><div class="popup-metric"><span>Antall enheter</span><strong>${unitCount}</strong></div></div>`;
   } else {
     const unitNumber = escapeHtml(
       firstPopulated(
@@ -684,9 +684,9 @@ function nearbyUnitsListHtml(
 
   return `
     <div class="popup-card popup-card-units" data-lng="${coordinates[0]}" data-lat="${coordinates[1]}">
-      <div class="popup-kicker">Attester på stedet</div>
+      <div class="popup-kicker">Enheter på stedet</div>
       <div class="popup-title">${addressDisplay}</div>
-      <div class="popup-subtitle"><strong>${parsedUnits.length}</strong> attester</div>
+      <div class="popup-subtitle"><strong>${parsedUnits.length}</strong> enheter</div>
       <div class="nearby-units-list">
         ${unitsHtml}
       </div>
@@ -804,7 +804,7 @@ function MapLegend({ heatmapStats }) {
         <div className="legend-list">
           <div className="legend-item">
             <span className="legend-dot dot-cluster-small" />
-            Liten klynge / enkeltattest
+            Liten klynge / enkeltenhet
           </div>
           <div className="legend-item">
             <span className="legend-dot dot-cluster-medium" />
@@ -2229,8 +2229,8 @@ function MapView({
         )}
         {nearbyState.results.length > 0 && (
           <div className="map-pill is-count">
-            <strong>{nearbyState.results.length}</strong> innlastede koordinater
-            i nærheten
+            <strong>{nearbyState.results.length}</strong> enheter i nærheten
+            (maks 200)
           </div>
         )}
       </div>
