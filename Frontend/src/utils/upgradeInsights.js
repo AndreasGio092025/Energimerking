@@ -150,7 +150,7 @@ export function buildUpgradeInsights(properties = {}) {
     drivers.push(driver('missing', 'Beregnet levert energi mangler', 'kWh/m² per år er ikke tilgjengelig, så anslaget bygger mer på karakterer og alder.'));
   } else if (energyUse >= 300) {
     drivers.push(driver('high', `${formatEnergyUse(energyUse)} beregnet levert energi`, 'Høy beregnet levert energi øker prioriteten.'));
-    addRecommendation(recommendations, 'Sammenlign den beregnede leverte energien i energiattesten med lignende bygg i nærheten før du velger tiltak.');
+    addRecommendation(recommendations, 'Sammenlign den beregnede leverte energien i energiattesten med andre bygg i nærheten før du velger tiltak.');
   } else if (energyUse >= 180) {
     drivers.push(driver('medium', `${formatEnergyUse(energyUse)} beregnet levert energi`, 'Middels til høy beregnet levert energi tilsier nærmere undersøkelse.'));
   } else {
