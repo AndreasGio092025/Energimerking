@@ -109,9 +109,9 @@ const ENOVA_2026_START_TIMESTAMP = Date.UTC(2026, 0, 1);
 
 export const CERTIFICATE_SCHEME_LABELS = {
   all: 'Alle ordninger',
-  '2026': 'Ny ordning (2026)',
+  '2026': 'Ny ordning (fra 2026)',
   legacy: 'Gammel ordning (før 2026)',
-  unknown: 'Ukjent dato'
+  unknown: 'Ukjent ordning'
 };
 
 const CERTIFICATE_DATE_KEYS = [

@@ -132,7 +132,7 @@ const ENERGY_GRADE_MEANINGS = {
   D: 'middels',
   E: 'svak',
   F: 'dårlig',
-  G: 'svakest'
+  G: 'dårligst'
 };
 
 const HEATING_GRADE_MEANINGS = {
@@ -297,7 +297,7 @@ function buildBydelStats(features) {
 }
 
 function formatEnergy(value) {
-  return value ? `${value} kWh/m²` : 'Mangler';
+  return value ? `${value} kWh/m² per år` : 'Mangler';
 }
 
 function formatNumber(value) {
@@ -338,10 +338,11 @@ function BydelStat({ label, value }) {
 function BydelStatsPanel({ bydelStats, externalBydelStats, externalBydelStatus }) {
   return (
     <div className="bydel-stats-grid">
-      <BydelStatSection Icon={Database}>Databasestatistikk</BydelStatSection>
-      <BydelStat label="Bygg" value={bydelStats.total.toLocaleString()} />
-      <BydelStat label="Gjennomsnittlig beregnet energibehov" value={formatEnergy(bydelStats.averageEnergy)} />
-      <BydelStat label="Typisk beregnet energibehov (median)" value={formatEnergy(bydelStats.medianEnergy)} />
+      <BydelStatSection Icon={Database}>Statistikk for innlastede attester</BydelStatSection>
+      <div className="bydel-stat-note">Tallene gjelder attestene som er lastet inn i kartet. En enhet kan ha flere attester.</div>
+      <BydelStat label="Antall attester" value={bydelStats.total.toLocaleString()} />
+      <BydelStat label="Gjennomsnittlig beregnet levert energi" value={formatEnergy(bydelStats.averageEnergy)} />
+      <BydelStat label="Typisk beregnet levert energi (median)" value={formatEnergy(bydelStats.medianEnergy)} />
       <BydelStat label="Vanligste energikarakter" value={bydelStats.mostCommonEnergyGrade} />
       <BydelStat label="Vanligste oppvarmingskarakter" value={bydelStats.mostCommonHeatingGrade ? heatingGradeName(bydelStats.mostCommonHeatingGrade) : 'Mangler'} />
       <BydelStat label="Gjennomsnittlig byggeår" value={bydelStats.averageBuildYear || 'Mangler'} />
@@ -616,13 +617,13 @@ function Filters() {
               onChange={(value) => updateRange('byggeaar', value)}
             />
             <RangeField
-              label="Beregnet energibehov"
+              label="Beregnet levert energi"
               min={filterBounds.energibruk_kwh_m2[0]}
               max={filterBounds.energibruk_kwh_m2[1]}
               value={filters.energibruk_kwh_m2}
               onChange={(value) => updateRange('energibruk_kwh_m2', value)}
-              suffix=" kWh/m²"
-              tooltip="Beregnet energibehov er beregnet levert energi per kvadratmeter ved normal bruk, vist i kWh/m². Enova bruker denne beregnede verdien til energikarakteren."
+              suffix=" kWh/m² per år"
+              tooltip="Beregnet levert energi per kvadratmeter per år ved normal bruk, vist i kWh/m² per år. Tallet er beregnet, ikke målt. Enova bruker det til energikarakteren."
             />
             <div className="filter-group radius-control">
               <div className="filter-label-row">
@@ -646,7 +647,7 @@ function Filters() {
             <div className="filter-group">
               <div className="filter-label-row">
                 <label>
-                  <HelpLabel tooltip="Energikarakteren går fra A til G. A er best og G er svakest. De nøyaktige grensene i kWh/m² varierer med bygningskategori, så områdene i de innlastede dataene kan overlappe.">
+                  <HelpLabel tooltip="Energikarakteren går fra A til G. A er best og G er dårligst. De nøyaktige grensene i kWh/m² per år varierer med bygningskategori, så områdene i de innlastede dataene kan overlappe.">
                     Energikarakter
                   </HelpLabel>
                 </label>

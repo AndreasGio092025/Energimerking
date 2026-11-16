@@ -54,10 +54,10 @@ function displayValue(value, fallback = "Ikke registrert") {
 
 const POPUP_HELP = {
   grade:
-    "Energikarakteren går fra A til G. A er best og G er svakest. Den bygger på beregnet levert energi per kvadratmeter ved normal bruk.",
+    "Energikarakteren går fra A til G. A er best og G er dårligst. Den bygger på beregnet levert energi per kvadratmeter per år ved normal bruk.",
   unit: "Enhetsnummeret (bruksenhetsnummer) til enheten i bygget.",
   energyUse:
-    "Beregnet levert energi per kvadratmeter ved normal bruk, vist i kWh/m².",
+    "Beregnet levert energi per kvadratmeter per år ved normal bruk, vist i kWh/m² per år. Tallet er beregnet, ikke målt.",
   built: "Byggeåret som er registrert for bygget eller enheten.",
   address: "Den registrerte adressen til dette bygget eller denne enheten.",
   municipality: "Navnet på kommunen, når det finnes.",
@@ -174,13 +174,13 @@ function popupHtml(properties) {
           <h2 class="marker-popup-title">${address}</h2>
         </div>
         <div class="marker-popup-grade ${energyGradeClass}">
-          <span>Karakter</span>
+          <span>Energikarakter</span>
           <strong>${energyGradeDisplay}</strong>
         </div>
       </div>
       <div class="marker-popup-snapshot" aria-label="Oppsummering av bygget">
         ${markerPopupMetric("Enhet", unitNumber, POPUP_HELP.unit)}
-        ${markerPopupMetric("Beregnet energibehov", energyUse, POPUP_HELP.energyUse)}
+        ${markerPopupMetric("Beregnet levert energi", energyUse, POPUP_HELP.energyUse)}
         ${markerPopupMetric("Byggeår", properties.byggeaar, POPUP_HELP.built)}
       </div>
       <div class="marker-popup-body">
@@ -286,7 +286,7 @@ function upgradePopupHtml(properties) {
         <div class="popup-heading">
           <div class="popup-kicker">Oppgraderingsprioritet</div>
           <div class="popup-title">${address}</div>
-          <div class="popup-subtitle">Oppgraderingsanslag basert på energiattest, oppvarming, beregnet energibehov, alder og hvor komplette dataene er.</div>
+          <div class="popup-subtitle">Oppgraderingsanslag basert på energiattest, oppvarming, beregnet levert energi, alder og hvor komplette dataene er.</div>
         </div>
         <div class="priority-badge ${priorityClass(score)}">
           <span>${escapeHtml(priority)}</span>
@@ -308,7 +308,7 @@ function upgradePopupHtml(properties) {
       <div class="popup-metrics">
         ${popupMetric("Energikarakter", properties.energikarakter, "popup-metric-compact", POPUP_HELP.grade)}
         ${popupMetric("Oppvarmingskarakter", heatingGradeName(properties.oppvarmingskarakter), "popup-metric-compact", POPUP_HELP.heatingGrade)}
-        ${popupMetric("Beregnet energibehov", energyUse, "popup-metric-compact", POPUP_HELP.energyUse)}
+        ${popupMetric("Beregnet levert energi", energyUse, "popup-metric-compact", POPUP_HELP.energyUse)}
         ${popupMetric("Byggeår", properties.byggeaar, "popup-metric-compact", POPUP_HELP.built)}
       </div>
 
@@ -623,7 +623,7 @@ function nearbyPopupHtml(properties) {
   `;
 
   if (unitCount > 1) {
-    html += `<div class="popup-grid"><div class="popup-metric"><span>Antall enheter</span><strong>${unitCount}</strong></div></div>`;
+    html += `<div class="popup-grid"><div class="popup-metric"><span>Antall attester</span><strong>${unitCount}</strong></div></div>`;
   } else {
     const unitNumber = escapeHtml(
       firstPopulated(
@@ -684,9 +684,9 @@ function nearbyUnitsListHtml(
 
   return `
     <div class="popup-card popup-card-units" data-lng="${coordinates[0]}" data-lat="${coordinates[1]}">
-      <div class="popup-kicker">Enheter på stedet</div>
+      <div class="popup-kicker">Attester på stedet</div>
       <div class="popup-title">${addressDisplay}</div>
-      <div class="popup-subtitle"><strong>${parsedUnits.length}</strong> enheter</div>
+      <div class="popup-subtitle"><strong>${parsedUnits.length}</strong> attester</div>
       <div class="nearby-units-list">
         ${unitsHtml}
       </div>
@@ -741,7 +741,7 @@ function openPopup(map, coordinates, html) {
 
 function formatEnergy(value) {
   return Number.isFinite(value) && value > 0
-    ? `${Math.round(value)} kWh/m²`
+    ? `${Math.round(value)} kWh/m² per år`
     : "Mangler";
 }
 
@@ -759,7 +759,7 @@ function MapLegend({ heatmapStats }) {
       <div className="legend-kicker">Infokort</div>
       {showHeatmapLegend ? (
         <>
-          <div className="legend-copy">Beregnet energibehov per byggested</div>
+          <div className="legend-copy">Beregnet levert energi per byggested</div>
           <div className="legend-gradient" />
           <div className="legend-scale">
             <span>
@@ -776,7 +776,7 @@ function MapLegend({ heatmapStats }) {
         <div className="legend-list">
           <div className="legend-item">
             <span className="legend-dot dot-building" />
-            Byggpunkter i Enkel bygg
+            Attester i Enkel bygg
           </div>
           <div className="legend-copy">
             Farget etter energikarakter.
@@ -804,7 +804,7 @@ function MapLegend({ heatmapStats }) {
         <div className="legend-list">
           <div className="legend-item">
             <span className="legend-dot dot-cluster-small" />
-            Liten klynge / enkeltbygg
+            Liten klynge / enkeltattest
           </div>
           <div className="legend-item">
             <span className="legend-dot dot-cluster-medium" />

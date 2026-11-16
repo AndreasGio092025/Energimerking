@@ -77,7 +77,7 @@ function certificateYearFromProperties(properties) {
 }
 
 function formatEnergyUse(value) {
-  return Number.isFinite(value) && value > 0 ? `${Math.round(value)} kWh/m²` : 'Mangler';
+  return Number.isFinite(value) && value > 0 ? `${Math.round(value)} kWh/m² per år` : 'Mangler';
 }
 
 function formatBuildYear(value) {
@@ -147,14 +147,14 @@ export function buildUpgradeInsights(properties = {}) {
   }
 
   if (!hasEnergyUse) {
-    drivers.push(driver('missing', 'Beregnet energibehov mangler', 'kWh/m² er ikke tilgjengelig, så anslaget bygger mer på karakterer og alder.'));
+    drivers.push(driver('missing', 'Beregnet levert energi mangler', 'kWh/m² per år er ikke tilgjengelig, så anslaget bygger mer på karakterer og alder.'));
   } else if (energyUse >= 300) {
-    drivers.push(driver('high', `${formatEnergyUse(energyUse)} beregnet energibehov`, 'Høyt beregnet levert energi øker prioriteten.'));
-    addRecommendation(recommendations, 'Sammenlign det beregnede energibehovet i energiattesten med lignende bygg i nærheten før du velger tiltak.');
+    drivers.push(driver('high', `${formatEnergyUse(energyUse)} beregnet levert energi`, 'Høy beregnet levert energi øker prioriteten.'));
+    addRecommendation(recommendations, 'Sammenlign den beregnede leverte energien i energiattesten med lignende bygg i nærheten før du velger tiltak.');
   } else if (energyUse >= 180) {
-    drivers.push(driver('medium', `${formatEnergyUse(energyUse)} beregnet energibehov`, 'Middels til høyt beregnet energibehov tilsier nærmere undersøkelse.'));
+    drivers.push(driver('medium', `${formatEnergyUse(energyUse)} beregnet levert energi`, 'Middels til høy beregnet levert energi tilsier nærmere undersøkelse.'));
   } else {
-    drivers.push(driver('low', `${formatEnergyUse(energyUse)} beregnet energibehov`, 'Beregnet energibehov dominerer ikke denne poengsummen.'));
+    drivers.push(driver('low', `${formatEnergyUse(energyUse)} beregnet levert energi`, 'Beregnet levert energi dominerer ikke denne poengsummen.'));
   }
 
   if (!hasHeatingGrade) {
@@ -207,9 +207,9 @@ export function buildUpgradeInsights(properties = {}) {
     dataUsed: [
       { label: 'Energikarakter', value: hasEnergyGrade ? energyGrade : 'Mangler', missing: !hasEnergyGrade },
       { label: 'Oppvarmingskarakter', value: hasHeatingGrade ? (heatingGradeName(heatingGrade)) : 'Mangler', missing: !hasHeatingGrade },
-      { label: 'Beregnet energibehov', value: formatEnergyUse(energyUse), missing: !hasEnergyUse },
+      { label: 'Beregnet levert energi', value: formatEnergyUse(energyUse), missing: !hasEnergyUse },
       { label: 'Byggeår', value: formatBuildYear(buildYear), missing: !hasBuildYear },
-      { label: 'Energiattest', value: hasCertificateYear ? String(certificateYear) : 'Ukjent dato', missing: !hasCertificateYear },
+      { label: 'Attestår', value: hasCertificateYear ? String(certificateYear) : 'Ukjent dato', missing: !hasCertificateYear },
       { label: 'Ordning', value: properties.certificateSchemeLabel || properties.certificateScheme || 'Ukjent', missing: !hasValue(properties.certificateSchemeLabel || properties.certificateScheme) },
       { label: 'Materialvalg', value: properties.materialvalg || 'Ikke registrert', missing: !hasValue(properties.materialvalg) },
       { label: 'Enhet', value: unitNumber || 'Ikke registrert', missing: !hasValue(unitNumber) }

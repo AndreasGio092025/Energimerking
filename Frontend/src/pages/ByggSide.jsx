@@ -28,12 +28,12 @@ const tall = (verdi, desimaler = 0) =>
 function andelSetning(andel) {
   const a = Number(andel);
   if (a < 0.05) {
-    return 'Nesten alle lignende enheter (over 95 %) har lavere beregnet energibehov enn bygget.';
+    return 'Nesten alle lignende enheter (over 95 %) har lavere beregnet levert energi enn bygget.';
   }
   if (a > 0.95) {
-    return 'Bygget har lavere beregnet energibehov enn nesten alle lignende enheter (over 95 %).';
+    return 'Bygget har lavere beregnet levert energi enn nesten alle lignende enheter (over 95 %).';
   }
-  return `Bygget har lavere beregnet energibehov enn ${Math.round(a * 100)} % av lignende enheter.`;
+  return `Bygget har lavere beregnet levert energi enn ${Math.round(a * 100)} % av lignende enheter.`;
 }
 
 // Testdata, bare når ?eksempel=1 eller ?eksempel=<navn> står i URL-en.
@@ -139,11 +139,11 @@ function Sammenligning({ lignende, bygg }) {
         {lignende.antall_enheter_bedre_enn_lignende != null && lignende.antall_enheter_med_energitall != null && (
           <li>
             {tall(lignende.antall_enheter_bedre_enn_lignende)} av {tall(lignende.antall_enheter_med_energitall)}{' '}
-            enheter i bygget har lavere beregnet energibehov enn vanlig for lignende bygg.
+            enheter i bygget har lavere beregnet levert energi enn vanlig for lignende bygg.
           </li>
         )}
         {lignende.median_kwh_m2 != null && (
-          <li>Beregnet energibehov (median) for lignende enheter: {tall(lignende.median_kwh_m2, 1)} kWh/m² per år.</li>
+          <li>Beregnet levert energi (median) for lignende enheter: {tall(lignende.median_kwh_m2, 1)} kWh/m² per år.</li>
         )}
       </ul>
     </div>
@@ -166,7 +166,7 @@ function OrdningSeksjon({ rad, bygg }) {
           <dd>{tall(rad.antall_attester)}</dd>
         </div>
         <div>
-          <dt>Beregnet energibehov (median)</dt>
+          <dt>Beregnet levert energi (median)</dt>
           <dd>
             {rad.median_kwh_m2 != null ? `${tall(rad.median_kwh_m2, 1)} kWh/m² per år` : 'Ikke tilgjengelig'}
           </dd>
@@ -258,7 +258,7 @@ export default function ByggSide({ bygningsnummer }) {
             <section className="forklaring">
               <h2>Slik leser du tallene</h2>
               <p>
-                <strong>Energikarakter</strong> (A til G) bygger på beregnet energibehov per kvadratmeter i året, ikke på målt
+                <strong>Energikarakter</strong> (A til G) bygger på beregnet levert energi per kvadratmeter per år, ikke på målt
                 forbruk. A er best og G er dårligst.
               </p>
               <p>

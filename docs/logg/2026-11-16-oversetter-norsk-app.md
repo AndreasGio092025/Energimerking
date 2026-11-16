@@ -3,7 +3,7 @@
 Gren: `oversett-appen` (fra `bygg-side`, d8f8cc9)
 
 ## Hva
-All engelsk tekst brukeren ser eller hører (inkludert `aria-label`, `title`, `placeholder`, tooltips og kartkontroller) i `Frontend/src/` er oversatt til bokmål. Bygg-siden (`ByggSide.jsx`, `ByggFraAttest.jsx`) var allerede norsk og er ikke endret. Ingen API-felt, dataverdier, CSS-klasser eller logikk er endret.
+All engelsk tekst brukeren ser eller hører (inkludert `aria-label`, `title`, `placeholder`, tooltips og kartkontroller) i `Frontend/src/` er oversatt til bokmål. Bygg-siden (`ByggSide.jsx`, `ByggFraAttest.jsx`) var allerede norsk og er ikke endret. Ingen API-felt, dataverdier eller CSS-klasser er endret, og logikken er bare rørt på tre bevisste punkter (`heatingGradeName()`, MapLibre-`locale`, `upgradePriority`-tekstene; se Hvorfor).
 
 ## Hvorfor
 - Ordlisten fra oppdraget er brukt likt overalt (se under). Beregnet energibehov brukes om kWh/m²; ordet «forbruk» er ikke brukt.
@@ -54,3 +54,12 @@ Uendret: `ByggSide.jsx`, `ByggFraAttest.jsx`, `Router.jsx`, `main.jsx`, `store/`
 
 ## Lær dette
 **Hvorfor `aria-label` også må oversettes:** `aria-label`, `title` og `placeholder` vises ikke på skjermen, men skjermlesere leser dem opp som navnet på knapper og felt. Står de på engelsk, hører en norsk bruker av skjermleser en blanding, med engelsk uttale av norsk side, og kan ikke forstå hva knappen gjør. De teller også som «tekst brukeren møter» (WCAG-krav om språk), så en oversettelse som bare ser på synlig tekst er ufullstendig. Bruk derfor alltid søk på attributtene i tillegg til synlig tekst.
+
+## Rettet etter reviewer
+Eierens avgjørelser:
+- **Telling (A):** teksten rettet, ikke logikken. Statistikkpanelet: «Bygg» → «Antall attester»; «Databasestatistikk» → «Statistikk for innlastede attester», med hjelpetekst «Tallene gjelder attestene som er lastet inn i kartet. En enhet kan ha flere attester.» Kartpopup: «Antall enheter» → «Antall attester», «Enheter på stedet» → «Attester på stedet», «N enheter» → «N attester». Legende: «Liten klynge / enkeltbygg» → «Liten klynge / enkeltattest»; «Byggpunkter i Enkel bygg» → «Attester i Enkel bygg» (fanenavnet «Enkel bygg» beholdt).
+- **Fagord (B):** «beregnet energibehov» → «beregnet levert energi» overalt i `Frontend/src`, også `ByggSide.jsx`; enheten skrives alltid «kWh/m² per år» (filter, statistikk, popup, legende, bygg-side, oppgraderingsinnsikt). Tooltip uten dobbelt «beregnet». Bygg-siden: energikarakteren bygger på beregnet levert energi per m² per år, ikke målt forbruk.
+
+Reviewers punkter: «Høy beregnet levert energi» (`upgradeInsights.js`); «Ny ordning (fra 2026)» og «Ukjent ordning» (`filtering.js`); «Attestår» i stedet for «Energiattest» foran årstall; popup «Karakter» → «Energikarakter»; «G er dårligst» i stedet for «svakest» (Filters, MapView); dato i filnavn rettet til 2026-11-16.
+
+Notert, ikke endret: «Før 1980» i statistikkpanelet er en logikkgrense som ikke følger kohortene (før 1949, 1949–1969, 1970–1986 …). Bør avgjøres av eier. Test etter rettelsene: `vite build` OK; `npm run dev` med `?eksempel=1#/bygg/80000000` og sidepanelet kontrollert.
