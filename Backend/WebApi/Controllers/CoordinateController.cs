@@ -277,11 +277,11 @@ namespace WebApi.Controllers
             }
             if (amount <= 0)
             {
-                return BadRequest("Amount must be greater than 0.");
+                return BadRequest("Antall må være større enn 0.");
             }
             if (skip < 0)
             {
-                return BadRequest("Skip cannot be negative.");
+                return BadRequest("Hopp over kan ikke være negativt.");
             }
             try
             {
@@ -307,19 +307,19 @@ namespace WebApi.Controllers
         {
             if (minLatitude < -90 || minLatitude > 90 || maxLatitude < -90 || maxLatitude > 90)
             {
-                return BadRequest("Latitude must be between -90 and 90.");
+                return BadRequest("Breddegrad må være mellom -90 og 90.");
             }
             if (minLongitude < -180 || minLongitude > 180 || maxLongitude < -180 || maxLongitude > 180)
             {
-                return BadRequest("Longitude must be between -180 and 180.");
+                return BadRequest("Lengdegrad må være mellom -180 og 180.");
             }
             if (amount <= 0)
             {
-                return BadRequest("Amount must be greater than 0.");
+                return BadRequest("Antall må være større enn 0.");
             }
             if (skip < 0)
             {
-                return BadRequest("Skip cannot be negative.");
+                return BadRequest("Hopp over kan ikke være negativt.");
             }
 
             try
@@ -354,34 +354,34 @@ namespace WebApi.Controllers
         {
             if (minLatitude < -90 || minLatitude > 90 || maxLatitude < -90 || maxLatitude > 90)
             {
-                return BadRequest("Latitude must be between -90 and 90.");
+                return BadRequest("Breddegrad må være mellom -90 og 90.");
             }
             if (minLongitude < -180 || minLongitude > 180 || maxLongitude < -180 || maxLongitude > 180)
             {
-                return BadRequest("Longitude must be between -180 and 180.");
+                return BadRequest("Lengdegrad må være mellom -180 og 180.");
             }
             if (limit <= 0 || limit > 5000)
             {
-                return BadRequest("Limit must be between 1 and 5000.");
+                return BadRequest("Grensen må være mellom 1 og 5000.");
             }
 
             var hasAnyCursor = cursorLat.HasValue || cursorLon.HasValue || cursorId.HasValue;
             var hasFullCursor = cursorLat.HasValue && cursorLon.HasValue && cursorId.HasValue;
             if (hasAnyCursor && !hasFullCursor)
             {
-                return BadRequest("cursorLat, cursorLon, and cursorId must be supplied together.");
+                return BadRequest("cursorLat, cursorLon og cursorId må oppgis sammen.");
             }
             if (cursorLat is < -90 or > 90)
             {
-                return BadRequest("cursorLat must be between -90 and 90.");
+                return BadRequest("cursorLat må være mellom -90 og 90.");
             }
             if (cursorLon is < -180 or > 180)
             {
-                return BadRequest("cursorLon must be between -180 and 180.");
+                return BadRequest("cursorLon må være mellom -180 og 180.");
             }
             if (cursorId is <= 0)
             {
-                return BadRequest("cursorId must be greater than 0.");
+                return BadRequest("cursorId må være større enn 0.");
             }
 
             try
@@ -408,7 +408,7 @@ namespace WebApi.Controllers
         {
             if (id <= 0)
             {
-                return BadRequest("Id must be greater than 0.");
+                return BadRequest("Id må være større enn 0.");
             }
 
             try
@@ -417,7 +417,7 @@ namespace WebApi.Controllers
 
                 if (result == null)
                 {
-                    return NotFound("Tile point was not found.");
+                    return NotFound("Fant ikke punktet.");
                 }
 
                 return Ok(result);

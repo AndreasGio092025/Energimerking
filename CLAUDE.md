@@ -38,6 +38,7 @@ Bindende fra 2026-11-15 (avgjort av eieren, se `docs/beslutninger.md`).
 
 ## Språk
 Brukergrensesnitt og tekst til brukere er **norsk (bokmål)**. Kode, variabler og commit-meldinger kan være engelsk eller norsk, men vær konsekvent i hver fil.
+Energitallet heter **beregnet levert energi** (kWh/m² per år), som hos Enova. Ikke «energibehov», «energibruk» eller «forbruk».
 
 ## Arbeidsform
 - Én agent = én gren (`git worktree`). Rediger bare mappen du eier (se `.claude/agents/`).
@@ -72,3 +73,4 @@ Store beslutninger (datamodell, faglige tolkninger, valg som er dyre å endre) s
 ## Kjente åpne punkter
 - `WebApi.csproj` har `Microsoft.NET.Sdk.web` (liten w); må være `Web` for Linux.
 - `energimerke.oppvarmingskarakter` er NOT NULL og blokkerer import av 2026-attester.
+- **Neste oppgave (eieren 2026-11-16):** kartet og statistikkpanelet teller attester fra `denorm_matrikkel_og_enova_oslo`, ikke enheter. Teksten sier nå «attester». Riktig telling av enheter og bygg bør hentes fra `mv_siste_attest_per_enhet` (SQL + API + frontend, egen plan).
