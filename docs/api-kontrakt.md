@@ -98,3 +98,71 @@ som leser `denorm_matrikkel_og_enova_oslo` (Oslo, attester fra 2025).
 | `energikarakter` | tekst | A–G | Energikarakter på attesten. |
 | `oppvarmingskarakter` | tekst | farge | `Green`, `Lightgreen`, `Yellow`, `Orange` eller `Red`. Merk stavemåten `Lightgreen`. |
 | `energy` | desimaltall | kWh/m² per år | Beregnet levert energi totalt per kvadratmeter. |
+
+## Enheter i kartet (`api/enheter`)
+Status: til godkjenning (2026-11-17).
+
+Erstatter `GetNearbyDeNormGeoJson` i bydelsvisningen (kart og statistikkpanel). «Enkel bygg» (`/tiles`) og bygg-siden
+er urørt. Ruter i `EnheterController`; begge returnerer rå JSON fra SQL-funksjoner i
+`Backend/Docker/db-init/08_enheter_kart.sql`, bygget på `mv_siste_attest_per_enhet` (siste attest per enhet og ordning).
+
+Felles parametre (query):
+
+| Parameter | Type | Betydning |
+|-----------|------|-----------|
+| `lat`, `lon` | desimaltall | Midtpunkt (WGS84). |
+| `radius` | heltall, meter | 1–20 000. Området er en sirkel, ikke en ekte bydelsgrense. |
+| `ordning` | tekst | Bare for `punkter`: `gammel`, `ny` eller `alle` (standard `gammel`). |
+
+Ugyldige parametre gir HTTP 400. Ingen bruksenhetsnummer, attestnummer eller `enhet_id` i utdata.
+
+### `GET api/enheter/punkter`
+GeoJSON `FeatureCollection` med ett `Point` per enhet (siste attest i ordningen) som har kartpunkt. Ved `ordning=alle`
+kan samme enhet gi to punkter, ett per ordning; `ordning` i egenskapene skiller dem. Maks 50 000 punkter; feltet
+`avkortet` sier om taket ble nådd.
+
+Toppnivå: `type` ("FeatureCollection"), `features`, `avkortet` (sann/usann), `antall` (heltall, antall punkter).
+
+| Egenskap per punkt | Type | Enhet | Betydning |
+|--------------------|------|-------|-----------|
+| `id` | tekst | – | Stabil, ikke-personlig nøkkel for punktet (hash), brukes bare til React/kart. |
+| `ordning` | tekst | – | "gammel" eller "ny". |
+| `bygningsnummer` | tekst | – | Byggets nasjonale id (brukes til «Vis bygget»). |
+| `adresse` | tekst | – | Adressen til enheten. |
+| `bygningskategori` | tekst eller null | – | F.eks. "Boligblokker". |
+| `byggeaar` | heltall eller null | år | Null hvis ukjent (0 eller før 1800). |
+| `kohort` | tekst eller null | – | Fra `byggeaar_kohort()`. |
+| `energikarakter` | tekst | A–G | Siste attests energikarakter. |
+| `oppvarmingskarakter` | tekst eller null | farge | Som oppslagstabellen (`LightGreen`). Null for ny ordning. |
+| `energi_kwh_m2` | desimaltall eller null | kWh/m² per år | Beregnet levert energi, én desimal. |
+| `utstedelsesdato` | dato (ÅÅÅÅ-MM-DD) | – | Siste attests dato. |
+| `antall_enheter_samme_punkt` | heltall | enheter | Enheter i samme ordning med identisk koordinat (f.eks. en blokk), så frontend kan vise «N enheter her». |
+
+### `GET api/enheter/statistikk`
+Regnet i SQL over *alle* enheter i sirkelen, ikke bare de som vises.
+
+Toppnivå:
+
+| Felt | Type | Enhet | Betydning |
+|------|------|-------|-----------|
+| `omrade` | objekt | – | `{ "lat", "lon", "radius_m" }` som brukt. |
+| `ordninger` | liste | – | Én rad per ordning, "gammel" før "ny". Ordningene blandes aldri. |
+
+Hver rad i `ordninger`:
+
+| Felt | Type | Enhet | Betydning |
+|------|------|-------|-----------|
+| `ordning` | tekst | – | "gammel" eller "ny". |
+| `periode` | tekst | – | F.eks. "attester utstedt i 2025". |
+| `antall_enheter` | heltall | enheter | Enheter med kartpunkt i sirkelen. |
+| `antall_attester` | heltall | attester | Alle attester for disse enhetene i ordningen. |
+| `antall_bygg` | heltall | bygg | Distinkte bygningsnumre. |
+| `enheter_uten_kartpunkt` | heltall | enheter | Enheter i ordningen i hele Oslo som ikke har koordinat og derfor ikke kan telles i noe område. Samme tall uansett sirkel. |
+| `karakterfordeling` | objekt | enheter | Antall enheter per energikarakter, alle sju nøkler A–G. |
+| `oppvarmingsfordeling` | objekt eller null | enheter | Antall per oppvarmingskarakter; null for ny ordning. |
+| `median_kwh_m2` | desimaltall eller null | kWh/m² per år | Median beregnet levert energi over enhetene. |
+| `gjennomsnitt_kwh_m2` | desimaltall eller null | kWh/m² per år | Gjennomsnitt, én desimal. |
+| `gjennomsnitt_byggeaar` | heltall eller null | år | Over enheter med gyldig byggeår. |
+| `kohortfordeling` | objekt | enheter | Antall enheter per kohort fra `byggeaar_kohort()`, pluss nøkkelen `"ukjent"`. Erstatter «Før 1980». |
+
+Har en ordning 0 enheter i sirkelen, er den med med `antall_enheter: 0` og null-tall.
