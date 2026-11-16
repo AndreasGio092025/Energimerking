@@ -50,16 +50,22 @@ Ordningene blandes aldri; hver rad gjelder bare attester i den ordningen.
 | `lignende` | objekt | – | Sammenligning med lignende bygg, se under. |
 
 ### `lignende` (inne i hver ordning)
-"Lignende" = enheter i *andre* bygg med samme `bygningskategori` og `kohort`, i samme ordning.
+"Lignende" = enheter i *andre* bygg i samme ordning, valgt i to trinn (se `CLAUDE.md`):
+1. samme `bygningskategori` og `kohort`;
+2. har trinn 1 under `minimum_lignende` enheter, eller bygget mangler kohort: samme `bygningskategori`, uansett byggeår.
 
 | Felt | Type | Enhet | Betydning |
 |------|------|-------|-----------|
-| `antall_enheter` | heltall | enheter | Enheter i lignende bygg. 0 hvis byggets kategori eller kohort er ukjent. |
+| `grunnlag` | tekst eller null | – | `"kategori og byggeår"` (trinn 1), `"bare kategori"` (trinn 2), eller null hvis byggets kategori er ukjent. Grensesnittet skal si hva bygget sammenlignes med. |
+| `antall_enheter` | heltall | enheter | Enheter i grunnlaget som ble brukt. 0 hvis byggets kategori er ukjent. |
 | `antall_bygg` | heltall | bygg | Antall lignende bygg. |
 | `nok_data` | sann/usann | – | `true` hvis `antall_enheter` ≥ `minimum_lignende`. Er den `false`, er feltene under null, og grensesnittet skal si at det er for få lignende bygg. |
 | `karakterfordeling` | objekt eller null | andel 0–1 | Andel av lignende enheter per energikarakter, A–G. Summerer til 1. |
 | `median_kwh_m2` | desimaltall eller null | kWh/m² per år | Median for lignende enheter, rundet til én desimal. |
 | `andel_med_hoyere_energibruk` | desimaltall eller null | andel 0–1 | Andel av lignende enheter som bruker mer energi per m² enn byggets median. 0,7 betyr at bygget bruker mindre enn 70 % av lignende. |
+| `andel_enheter_bedre_enn_lignende` | desimaltall eller null | andel 0–1 | Andel av *byggets* enheter som bruker mindre energi per m² enn `median_kwh_m2` for lignende. Viser spredning i bygget ("6 av 10 leiligheter bruker mindre enn vanlig"). Null hvis bygget har under 3 enheter i ordningen, eller hvis `nok_data` er `false`. |
+
+Frontend skal vise byggets `karakterfordeling` (antall enheter per karakter) synlig sammen med medianen, så spredningen i bygget ikke skjules.
 
 ## Vektor-tiles (`GET /tiles/{z}/{x}/{y}.pbf`)
 Status: godkjent av eieren 2026-11-15.
