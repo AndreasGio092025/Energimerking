@@ -23,7 +23,13 @@ const tall = (verdi, desimaler = 0) =>
     maximumFractionDigits: desimaler
   });
 
-const avTi = (andel) => Math.round(Number(andel) * 10);
+// Andel 0-1 som hele prosent; ytterpunktene skrives «under 5 %» / «over 95 %».
+function prosent(andel) {
+  const a = Number(andel);
+  if (a < 0.05) return 'under 5 %';
+  if (a > 0.95) return 'over 95 %';
+  return `${Math.round(a * 100)} %`;
+}
 
 function erEksempel() {
   return new URLSearchParams(window.location.search).get('eksempel') === '1';
@@ -77,44 +83,57 @@ function Oppvarming({ fordeling }) {
   );
 }
 
-function Sammenligning({ lignende, bygg }) {
+function Sammenligning({ lignende, bygg, enheterIBygget }) {
   const { grunnlag, antall_enheter, antall_bygg, nok_data } = lignende;
+  const kategori = bygg.bygningskategori ? `«${bygg.bygningskategori}»` : '';
+  const overskrift = <h4>Sammenligning med lignende bygg</h4>;
 
-  if (!nok_data) {
+  if (grunnlag == null) {
     return (
       <div className="sammenligning">
-        <h4>Sammenligning med lignende bygg</h4>
-        <p>Det er for få lignende bygg til en rettferdig sammenligning.</p>
+        {overskrift}
+        <p>Bygningskategorien er ukjent, så bygget kan ikke sammenlignes.</p>
       </div>
     );
   }
 
-  let grunnlagTekst;
-  if (grunnlag === 'kategori og byggeår') {
-    grunnlagTekst = `Sammenlignet med ${tall(antall_enheter)} leiligheter i ${tall(antall_bygg)} lignende bygg fra samme periode (${bygg.kohort}).`;
-  } else if (grunnlag === 'bare kategori') {
-    grunnlagTekst = `Sammenlignet med ${tall(antall_enheter)} leiligheter i ${tall(antall_bygg)} bygg i alle ${(bygg.bygningskategori || '').toLowerCase()}, uansett byggeår.`;
-  } else {
-    grunnlagTekst = 'Byggets kategori er ukjent, så vi finner ikke lignende bygg.';
+  const grunnlagSluttord =
+    grunnlag === 'kategori og byggeår' ? `fra samme byggeperiode (${bygg.kohort})` : 'uansett byggeår';
+
+  if (!nok_data) {
+    return (
+      <div className="sammenligning">
+        {overskrift}
+        <p>
+          Det er for få lignende bygg til en rettferdig sammenligning: bare {tall(antall_enheter)} enheter i
+          kategorien {kategori} {grunnlagSluttord}.
+        </p>
+      </div>
+    );
   }
 
   return (
     <div className="sammenligning">
-      <h4>Sammenligning med lignende bygg</h4>
-      <p>{grunnlagTekst}</p>
+      {overskrift}
+      <p>
+        Sammenlignet med {tall(antall_enheter)} enheter i {tall(antall_bygg)} bygg i kategorien {kategori}{' '}
+        {grunnlagSluttord}.
+      </p>
       <ul>
         {lignende.andel_med_hoyere_energibruk != null && (
           <li>
-            Bygget bruker mindre energi enn {avTi(lignende.andel_med_hoyere_energibruk)} av 10 lignende leiligheter.
+            Bygget har lavere beregnet energibehov enn {prosent(lignende.andel_med_hoyere_energibruk)} av lignende
+            enheter.
           </li>
         )}
         {lignende.andel_enheter_bedre_enn_lignende != null && (
           <li>
-            {avTi(lignende.andel_enheter_bedre_enn_lignende)} av 10 leiligheter i bygget bruker mindre enn vanlig for lignende bygg.
+            {Math.round(Number(lignende.andel_enheter_bedre_enn_lignende) * enheterIBygget)} av {tall(enheterIBygget)}{' '}
+            enheter i bygget har lavere beregnet energibehov enn vanlig for lignende bygg.
           </li>
         )}
         {lignende.median_kwh_m2 != null && (
-          <li>Typisk (median) energibruk for lignende leiligheter: {tall(lignende.median_kwh_m2, 1)} kWh/m² per år.</li>
+          <li>Beregnet energibehov (median) for lignende enheter: {tall(lignende.median_kwh_m2, 1)} kWh/m² per år.</li>
         )}
       </ul>
     </div>
@@ -129,7 +148,7 @@ function OrdningSeksjon({ rad, bygg }) {
 
       <dl className="nokkeltall">
         <div>
-          <dt>Antall enheter (leiligheter)</dt>
+          <dt>Antall enheter</dt>
           <dd>{tall(rad.antall_enheter)}</dd>
         </div>
         <div>
@@ -137,21 +156,21 @@ function OrdningSeksjon({ rad, bygg }) {
           <dd>{tall(rad.antall_attester)}</dd>
         </div>
         <div>
-          <dt>Median energibruk</dt>
+          <dt>Beregnet energibehov (median)</dt>
           <dd>
             {rad.median_kwh_m2 != null ? `${tall(rad.median_kwh_m2, 1)} kWh/m² per år` : 'Ikke tilgjengelig'}
           </dd>
         </div>
       </dl>
       <p className="liten">
-        En leilighet kan ha flere attester over tid. Karakterene under teller bare siste attest per leilighet.
+        En enhet kan ha flere attester over tid. Karakterene under teller bare siste attest per enhet.
       </p>
 
       <Soylediagram fordeling={rad.karakterfordeling} tittel="Antall enheter per energikarakter" />
 
       {rad.oppvarmingsfordeling && <Oppvarming fordeling={rad.oppvarmingsfordeling} />}
 
-      <Sammenligning lignende={rad.lignende} bygg={bygg} />
+      <Sammenligning lignende={rad.lignende} bygg={bygg} enheterIBygget={rad.antall_enheter} />
     </section>
   );
 }
@@ -198,11 +217,20 @@ export default function ByggSide({ bygningsnummer }) {
           <>
             <header>
               <p className="kicker">Energimerking av bygg</p>
-              <h1>{data.adresser?.length ? data.adresser.join(', ') : `Bygg ${data.bygningsnummer}`}</h1>
+              <h1>
+                {data.adresser?.length
+                  ? data.adresser.length > 1
+                    ? `${data.adresser[0]} og ${data.adresser.length - 1} ${data.adresser.length === 2 ? 'annen inngang' : 'andre innganger'}`
+                    : data.adresser[0]
+                  : `Bygg ${data.bygningsnummer}`}
+              </h1>
+              {data.adresser?.length > 1 && (
+                <p className="bygg-fakta liten">Alle adresser: {data.adresser.join(', ')}</p>
+              )}
               <p className="bygg-fakta">
                 {data.bygningskategori ?? 'Ukjent bygningskategori'}
                 {data.byggeaar != null ? `, bygget i ${data.byggeaar}` : ', ukjent byggeår'}
-                {data.kohort ? `, bygget i perioden ${data.kohort}` : ''}
+                {data.kohort ? ` (byggeperiode: ${data.kohort})` : ''}
               </p>
               <p className="bygg-fakta liten">Bygningsnummer {data.bygningsnummer}</p>
             </header>
@@ -220,16 +248,16 @@ export default function ByggSide({ bygningsnummer }) {
             <section className="forklaring">
               <h2>Slik leser du tallene</h2>
               <p>
-                <strong>Energikarakter</strong> (A til G) sier hvor mye energi en leilighet bruker per kvadratmeter i året.
-                A er best og G er dårligst.
+                <strong>Energikarakter</strong> (A til G) bygger på beregnet energibehov per kvadratmeter i året, ikke på målt
+                forbruk. A er best og G er dårligst.
               </p>
               <p>
                 <strong>Oppvarmingskarakter</strong> sier hvor miljøvennlig oppvarmingen i bygget er, fra grønn
                 (best) til rød (minst miljøvennlig). Den finnes bare i den gamle ordningen.
               </p>
               <p>
-                <strong>Enhet</strong> betyr én leilighet eller bruksenhet. <strong>Attest</strong> er ett enkelt
-                dokument fra Enova. Én leilighet kan ha flere attester. Tallene beskriver bare hva som er registrert, og
+                <strong>Enhet</strong> betyr én bruksenhet, for eksempel en leilighet. <strong>Attest</strong> er ett enkelt
+                dokument fra Enova. Én enhet kan ha flere attester. Tallene beskriver bare hva som er registrert, og
                 sier ikke noe om årsaker.
               </p>
             </section>

@@ -26,3 +26,11 @@
 - Median for lignende bygg vises i tillegg til det oppgaven ba om (`lignende.median_kwh_m2` finnes i kontrakten).
 
 **Lær dette:** *Hash-ruting* bruker delen av URL-en etter `#`. Nettleseren laster ikke siden på nytt når den endres, og `hashchange`-hendelsen lar appen bytte visning uten ruter-pakke eller serveroppsett. *`@media print`* er CSS som bare gjelder ved utskrift/PDF. Her skjuler den alt som ikke hører hjemme på papiret og setter sidestørrelsen med `@page`.
+
+## Rettet etter reviewer
+- «leiligheter» er byttet med «enheter» overalt (unntatt som eksempel i forklaringen av «enhet»). Kategorinavnet skrives nå i anførselstegn med original skrivemåte: «i kategorien «K» fra samme byggeperiode (kohort)» (trinn 1) og «… uansett byggeår» (trinn 2).
+- «X av 10» er erstattet med hele prosent, med «under 5 %» og «over 95 %» i ytterpunktene. `andel_enheter_bedre_enn_lignende` vises som «X av N enheter i bygget», der N er `antall_enheter` i ordningen og X er andelen ganget med N (avrunding for visning).
+- Tallene kalles «beregnet energibehov», ikke energibruk, og forklaringen sier at karakteren bygger på beregnet energibehov per m² per år, ikke målt forbruk.
+- `nok_data: false` sier nå hvilket grunnlag som ble prøvd og hvor mange enheter det hadde. Ukjent kategori (`grunnlag` null) sjekkes først og gir «Bygningskategorien er ukjent, så bygget kan ikke sammenlignes.»
+- Fakta-linjen: «bygget i 1962 (byggeperiode: 1949–1969)». Overskriften viser første adresse og «og N andre innganger», med full liste i en mindre linje under.
+- Ikke testet: tekstvarianten for ukjent kategori (testdata har ingen rad med `grunnlag: null`).
