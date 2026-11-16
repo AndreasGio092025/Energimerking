@@ -82,9 +82,10 @@ public class EnergimerkingService(DbContexts.EnergimerkingContext context) : DbC
 
             return jsonSerializer.Json;
         }
-        catch (Exception ex)
+        catch
         {
-            return $"Feil ved søk: {ex.Message}";
+            // Kastes videre så kontrolleren logger feilen og svarer 500 uten å vise unntaksteksten.
+            throw;
         }
     }
 

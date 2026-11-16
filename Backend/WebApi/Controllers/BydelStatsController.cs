@@ -179,7 +179,8 @@ public class BydelStatsController : ControllerBase
         var apiKey = _configuration["Nobil:ApiKey"] ?? Environment.GetEnvironmentVariable("NOBIL_API_KEY");
         if (string.IsNullOrWhiteSpace(apiKey))
         {
-            return new { publicChargers = (int?)null, fastChargers = (int?)null, status = "Ladestasjoner vises ikke: NOBIL-nøkkel mangler (Nobil:ApiKey eller NOBIL_API_KEY)." };
+            _logger.LogWarning("NOBIL-nøkkel mangler: sett Nobil:ApiKey eller NOBIL_API_KEY for å vise ladestasjoner.");
+            return new { publicChargers = (int?)null, fastChargers = (int?)null, status = "Ladestasjoner er ikke tilgjengelige." };
         }
 
         try

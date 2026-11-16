@@ -31,6 +31,15 @@ builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
+// Felles feilhåndtering: uventede feil logges, og klienten får aldri unntakstekst eller stack trace
+// (heller ikke i Development, der ASP.NET ellers viser detaljene).
+app.UseExceptionHandler(feil => feil.Run(async ctx =>
+{
+    ctx.Response.StatusCode = StatusCodes.Status500InternalServerError;
+    ctx.Response.ContentType = "text/plain; charset=utf-8";
+    await ctx.Response.WriteAsync("Noe gikk galt på serveren. Prøv igjen senere.");
+}));
+
     app.UseSwagger();
     app.UseSwaggerUI();
 
