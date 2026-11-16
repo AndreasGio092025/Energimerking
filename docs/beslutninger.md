@@ -2,6 +2,10 @@
 
 Kort logg over valg som er viktige eller dyre å endre. Nyeste øverst.
 
+## 2026-11-16: Bygg med én eller to enheter vises med fulle tall
+**Beslutning:** Bygg-oversikten viser karakter, beregnet energibehov og sammenligning også for bygg med én eller to enheter, selv om tallene da i praksis er én boligs.
+**Hvorfor:** Energiattestene er offentlige hos Enova og vises allerede per attest i kartet. Å skjule dem ville gitt de fleste småhus en nesten tom bygg-side. API-et gir fortsatt aldri bruksenhetsnummer, attestnummer eller `enhet_id`.
+
 ## 2026-11-16: Reserve-trinn for lignende bygg, og spredning i bygget
 **Beslutning:**
 - Har kategori + kohort under 10 enheter, sammenlignes med hele kategorien uansett byggeår. API-et sier hvilket grunnlag som er brukt (`grunnlag`).
