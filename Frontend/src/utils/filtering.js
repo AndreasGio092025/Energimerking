@@ -108,10 +108,10 @@ function municipalityNameFromNumber(value) {
 const ENOVA_2026_START_TIMESTAMP = Date.UTC(2026, 0, 1);
 
 export const CERTIFICATE_SCHEME_LABELS = {
-  all: 'All methods',
-  '2026': '2026 method',
-  legacy: 'Before 2026',
-  unknown: 'Unknown date'
+  all: 'Alle ordninger',
+  '2026': 'Ny ordning (2026)',
+  legacy: 'Gammel ordning (før 2026)',
+  unknown: 'Ukjent dato'
 };
 
 const CERTIFICATE_DATE_KEYS = [
@@ -225,7 +225,7 @@ function buildUpgradeScores(properties) {
     energyUpgradeScore,
     heatingUpgradeScore,
     upgradeScore,
-    upgradePriority: upgradeScore >= 75 ? 'High' : upgradeScore >= 45 ? 'Medium' : 'Low'
+    upgradePriority: upgradeScore >= 75 ? 'Høy prioritet' : upgradeScore >= 45 ? 'Middels prioritet' : 'Lav prioritet'
   };
 }
 
@@ -334,7 +334,7 @@ function normalizeProperties(rawProperties = {}, coordinates = []) {
     organisasjonsNr: firstNestedValue(propertySources, ['organisasjonsNr', 'OrganisasjonsNr', 'organisasjonsnummer', 'Organisasjonsnummer']),
     utstedelsesdato: issuedDate,
     materialvalg: firstNestedValue(propertySources, ['materialvalg', 'Materialvalg', 'matierialvalg', 'Matierialvalg']),
-    dataSource: firstNestedValue(propertySources, ['dataSource', 'DataSource', 'source', 'Source', 'kilde', 'Kilde'], 'Local Enova energy certificate data'),
+    dataSource: firstNestedValue(propertySources, ['dataSource', 'DataSource', 'source', 'Source', 'kilde', 'Kilde'], 'Lokale energiattestdata fra Enova'),
     sourceApiVersion: firstNestedValue(propertySources, ['sourceApiVersion', 'SourceApiVersion', 'apiVersion', 'ApiVersion']),
     lastSyncedAt: firstNestedValue(propertySources, ['lastSyncedAt', 'LastSyncedAt', 'importedAt', 'ImportedAt']),
     certificateScheme,

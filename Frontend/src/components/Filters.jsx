@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Database, Flame, Landmark, Layers, MapPin, PlugZap, TrendingUp } from 'lucide-react';
 import { fetchBydelStats } from '../services/api.js';
 import { useStore } from '../store/useStore.js';
-import { BYDEL_DISPLAY_MODES, MAP_VIEW_MODES } from '../utils/constants.js';
+import { BYDEL_DISPLAY_MODES, MAP_VIEW_MODES, heatingGradeName } from '../utils/constants.js';
 import { OSLO_BYDELER, findBydel } from '../utils/osloBydeler.js';
 
 function RangeField({ label, min, max, value, onChange, suffix = '', step = 1, tooltip = '' }) {
@@ -77,7 +77,7 @@ function RangeField({ label, min, max, value, onChange, suffix = '', step = 1, t
         <input
           className="range-input range-input-max"
           type="range"
-          aria-label={`${label} maximum`}
+          aria-label={`${label} maksimum`}
           min={min}
           max={max}
           step={step}
@@ -127,19 +127,19 @@ function SectionToggle({ children, controlsId, isOpen, onToggle }) {
 
 const ENERGY_GRADE_MEANINGS = {
   A: 'best',
-  B: 'very good',
-  C: 'good',
-  D: 'average',
-  E: 'weak',
-  F: 'poor',
-  G: 'weakest'
+  B: 'svært god',
+  C: 'god',
+  D: 'middels',
+  E: 'svak',
+  F: 'dårlig',
+  G: 'svakest'
 };
 
 const HEATING_GRADE_MEANINGS = {
-  GREEN: 'very high renewable/non-electric share',
-  YELLOW: 'moderate renewable share',
-  ORANGE: 'mostly electric heating',
-  RED: 'direct electric or fossil heating'
+  GREEN: 'svært høy andel fornybar/ikke-elektrisk oppvarming',
+  YELLOW: 'moderat andel fornybar oppvarming',
+  ORANGE: 'hovedsakelig elektrisk oppvarming',
+  RED: 'direkte elektrisk eller fossil oppvarming'
 };
 
 const HEATING_GRADE_ORDER = {
@@ -176,7 +176,7 @@ function normalizeHeatingGrade(grade) {
 }
 
 function heatingGradeMeaning(grade) {
-  return HEATING_GRADE_MEANINGS[normalizeHeatingGrade(grade)] || 'heating score';
+  return HEATING_GRADE_MEANINGS[normalizeHeatingGrade(grade)] || 'oppvarmingskarakter';
 }
 
 function compareHeatingGrades(left, right) {
@@ -212,7 +212,7 @@ function countBy(values, allowedValues) {
   return counts;
 }
 
-function mostCommon(values, fallback = 'N/A') {
+function mostCommon(values, fallback = 'Mangler') {
   const counts = new Map();
 
   values.filter(Boolean).forEach((value) => {
@@ -297,19 +297,19 @@ function buildBydelStats(features) {
 }
 
 function formatEnergy(value) {
-  return value ? `${value} kWh/m2` : 'N/A';
+  return value ? `${value} kWh/m²` : 'Mangler';
 }
 
 function formatNumber(value) {
-  return Number.isFinite(Number(value)) ? Math.round(Number(value)).toLocaleString() : 'N/A';
+  return Number.isFinite(Number(value)) ? Math.round(Number(value)).toLocaleString() : 'Mangler';
 }
 
 function formatCurrency(value) {
-  return Number.isFinite(Number(value)) ? `${Math.round(Number(value)).toLocaleString()} kr` : 'N/A';
+  return Number.isFinite(Number(value)) ? `${Math.round(Number(value)).toLocaleString()} kr` : 'Mangler';
 }
 
 function formatPercent(value) {
-  return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)}%` : 'N/A';
+  return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)}%` : 'Mangler';
 }
 
 function formatCountShare(count, total) {
@@ -338,45 +338,45 @@ function BydelStat({ label, value }) {
 function BydelStatsPanel({ bydelStats, externalBydelStats, externalBydelStatus }) {
   return (
     <div className="bydel-stats-grid">
-      <BydelStatSection Icon={Database}>Database stats</BydelStatSection>
-      <BydelStat label="Buildings" value={bydelStats.total.toLocaleString()} />
-      <BydelStat label="Avg energy" value={formatEnergy(bydelStats.averageEnergy)} />
-      <BydelStat label="Typical energy" value={formatEnergy(bydelStats.medianEnergy)} />
-      <BydelStat label="Common energy grade" value={bydelStats.mostCommonEnergyGrade} />
-      <BydelStat label="Common heating" value={bydelStats.mostCommonHeatingGrade} />
-      <BydelStat label="Avg build year" value={bydelStats.averageBuildYear || 'N/A'} />
-      <BydelStat label="Before 1980" value={`${bydelStats.oldBuildingShare}%`} />
-      <BydelStat label="High upgrade" value={`${bydelStats.highUpgradeShare}%`} />
+      <BydelStatSection Icon={Database}>Databasestatistikk</BydelStatSection>
+      <BydelStat label="Bygg" value={bydelStats.total.toLocaleString()} />
+      <BydelStat label="Gjennomsnittlig beregnet energibehov" value={formatEnergy(bydelStats.averageEnergy)} />
+      <BydelStat label="Typisk beregnet energibehov (median)" value={formatEnergy(bydelStats.medianEnergy)} />
+      <BydelStat label="Vanligste energikarakter" value={bydelStats.mostCommonEnergyGrade} />
+      <BydelStat label="Vanligste oppvarmingskarakter" value={bydelStats.mostCommonHeatingGrade ? heatingGradeName(bydelStats.mostCommonHeatingGrade) : 'Mangler'} />
+      <BydelStat label="Gjennomsnittlig byggeår" value={bydelStats.averageBuildYear || 'Mangler'} />
+      <BydelStat label="Før 1980" value={`${bydelStats.oldBuildingShare}%`} />
+      <BydelStat label="Høy oppgraderingsprioritet" value={`${bydelStats.highUpgradeShare}%`} />
       {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((grade) => (
         <BydelStat
           key={grade}
-          label={`Energy ${grade}`}
+          label={`Energikarakter ${grade}`}
           value={formatCountShare(bydelStats.energyGradeCounts[grade], bydelStats.total)}
         />
       ))}
-      <BydelStat label="Heating green" value={formatCountShare(bydelStats.heatingGradeCounts.GREEN, bydelStats.total)} />
-      <BydelStat label="Heating yellow" value={formatCountShare(bydelStats.heatingGradeCounts.YELLOW, bydelStats.total)} />
-      <BydelStat label="Heating orange" value={formatCountShare(bydelStats.heatingGradeCounts.ORANGE, bydelStats.total)} />
-      <BydelStat label="Heating red" value={formatCountShare(bydelStats.heatingGradeCounts.RED, bydelStats.total)} />
+      <BydelStat label="Oppvarming grønn" value={formatCountShare(bydelStats.heatingGradeCounts.GREEN, bydelStats.total)} />
+      <BydelStat label="Oppvarming gul" value={formatCountShare(bydelStats.heatingGradeCounts.YELLOW, bydelStats.total)} />
+      <BydelStat label="Oppvarming oransje" value={formatCountShare(bydelStats.heatingGradeCounts.ORANGE, bydelStats.total)} />
+      <BydelStat label="Oppvarming rød" value={formatCountShare(bydelStats.heatingGradeCounts.RED, bydelStats.total)} />
 
       <BydelStatSection
         Icon={Landmark}
-        status={externalBydelStatus === 'loading' ? 'loading' : ''}
+        status={externalBydelStatus === 'loading' ? 'laster' : ''}
       >
-        SSB / Oslo stats
+        Statistikk fra SSB / Oslo
       </BydelStatSection>
-      <BydelStat label="Median price" value={formatCurrency(externalBydelStats?.housing?.medianHousePrice)} />
-      <BydelStat label="Price per m2" value={formatCurrency(externalBydelStats?.housing?.pricePerM2)} />
-      <BydelStat label="Price trend" value={formatPercent(externalBydelStats?.housing?.priceTrendPercent)} />
-      <BydelStat label="Median income" value={formatCurrency(externalBydelStats?.demographics?.medianHouseholdIncome)} />
-      <BydelStat label="Population" value={formatNumber(externalBydelStats?.demographics?.population)} />
-      <BydelStat label="Population growth" value={formatPercent(externalBydelStats?.demographics?.populationGrowthPercent)} />
+      <BydelStat label="Median pris" value={formatCurrency(externalBydelStats?.housing?.medianHousePrice)} />
+      <BydelStat label="Pris per m²" value={formatCurrency(externalBydelStats?.housing?.pricePerM2)} />
+      <BydelStat label="Pristrend" value={formatPercent(externalBydelStats?.housing?.priceTrendPercent)} />
+      <BydelStat label="Median husholdningsinntekt" value={formatCurrency(externalBydelStats?.demographics?.medianHouseholdIncome)} />
+      <BydelStat label="Folketall" value={formatNumber(externalBydelStats?.demographics?.population)} />
+      <BydelStat label="Befolkningsvekst" value={formatPercent(externalBydelStats?.demographics?.populationGrowthPercent)} />
 
-      <BydelStatSection Icon={PlugZap}>NOBIL stats</BydelStatSection>
-      <BydelStat label="Public chargers" value={formatNumber(externalBydelStats?.chargers?.publicChargers)} />
-      <BydelStat label="Fast chargers" value={formatNumber(externalBydelStats?.chargers?.fastChargers)} />
+      <BydelStatSection Icon={PlugZap}>Statistikk fra NOBIL</BydelStatSection>
+      <BydelStat label="Offentlige ladere" value={formatNumber(externalBydelStats?.chargers?.publicChargers)} />
+      <BydelStat label="Hurtigladere" value={formatNumber(externalBydelStats?.chargers?.fastChargers)} />
       {externalBydelStatus === 'error' && (
-        <div className="bydel-stat-note">External bydel stats are unavailable.</div>
+        <div className="bydel-stat-note">Ekstern bydelsstatistikk er ikke tilgjengelig.</div>
       )}
       {externalBydelStats?.chargers?.status && (
         <div className="bydel-stat-note">{externalBydelStats.chargers.status}</div>
@@ -452,7 +452,7 @@ function Filters() {
       .sort((left, right) => left.localeCompare(right))
       .map((grade) => ({
         grade,
-        meaning: ENERGY_GRADE_MEANINGS[grade] || 'registered grade'
+        meaning: ENERGY_GRADE_MEANINGS[grade] || 'registrert karakter'
       }));
   }, [allFeatures]);
 
@@ -484,11 +484,11 @@ function Filters() {
       <section className="filter-card">
         <div className="section-heading">
           <div>
-            <div className="section-kicker">View mode</div>
+            <div className="section-kicker">Visningsvalg</div>
           </div>
         </div>
         <div className="filter-group view-mode-select">
-          <div className="mode-segment-control" role="group" aria-label="View mode">
+          <div className="mode-segment-control" role="group" aria-label="Visningsvalg">
             {FILTER_MODE_ITEMS.map((item) => {
               const Icon = item.Icon;
               const isActive = viewMode === item.value;
@@ -520,7 +520,7 @@ function Filters() {
                 <div className="section-kicker">Bydeler i Oslo</div>
               </div>
             </div>
-            <div className="bydel-display-toggle" role="group" aria-label="Bydel map display">
+            <div className="bydel-display-toggle" role="group" aria-label="Visning av bydeler i kartet">
               {BYDEL_DISPLAY_ITEMS.map((item) => {
                 const Icon = item.Icon;
                 const isActive = bydelDisplayMode === item.value;
@@ -569,7 +569,7 @@ function Filters() {
               isOpen={statsOpen}
               onToggle={() => setStatsOpen((open) => !open)}
             >
-              Stats
+              Statistikk
             </SectionToggle>
           </div>
           <div
@@ -594,10 +594,10 @@ function Filters() {
             isOpen={filtersOpen}
             onToggle={() => setFiltersOpen((open) => !open)}
           >
-            Filters
+            Filtre
           </SectionToggle>
           <button type="button" className="reset-button" onClick={resetFilters}>
-            Reset
+            Nullstill
           </button>
         </div>
 
@@ -609,25 +609,25 @@ function Filters() {
         >
           <div className="filters-fields">
             <RangeField
-              label="Build year"
+              label="Byggeår"
               min={filterBounds.byggeaar[0]}
               max={filterBounds.byggeaar[1]}
               value={filters.byggeaar}
               onChange={(value) => updateRange('byggeaar', value)}
             />
             <RangeField
-              label="Energy use"
+              label="Beregnet energibehov"
               min={filterBounds.energibruk_kwh_m2[0]}
               max={filterBounds.energibruk_kwh_m2[1]}
               value={filters.energibruk_kwh_m2}
               onChange={(value) => updateRange('energibruk_kwh_m2', value)}
-              suffix=" kWh/m2"
-              tooltip="Energy use is calculated delivered energy per square meter for normal use, shown as kWh/m2. Enova uses this calculated value for the energy grade."
+              suffix=" kWh/m²"
+              tooltip="Beregnet energibehov er beregnet levert energi per kvadratmeter ved normal bruk, vist i kWh/m². Enova bruker denne beregnede verdien til energikarakteren."
             />
             <div className="filter-group radius-control">
               <div className="filter-label-row">
                 <label htmlFor="radius-range">
-                  <HelpLabel tooltip="Radius controls how far from your clicked map point the app searches for nearby buildings. Turn Radius on, choose a distance here, then click the map.">
+                  <HelpLabel tooltip="Radius styrer hvor langt fra punktet du klikker i kartet appen søker etter bygg i nærheten. Slå på radius, velg en avstand her og klikk deretter i kartet.">
                     Radius
                   </HelpLabel>
                 </label>
@@ -646,12 +646,12 @@ function Filters() {
             <div className="filter-group">
               <div className="filter-label-row">
                 <label>
-                  <HelpLabel tooltip="Energy grade runs from A to G. A is best and G is weakest. The exact kWh/m2 thresholds vary by building type/category, so loaded data ranges can overlap.">
-                    Energy grade
+                  <HelpLabel tooltip="Energikarakteren går fra A til G. A er best og G er svakest. De nøyaktige grensene i kWh/m² varierer med bygningskategori, så områdene i de innlastede dataene kan overlappe.">
+                    Energikarakter
                   </HelpLabel>
                 </label>
                 <div className="filter-range-value">
-                  {selectedEnergyGrades.length === 0 ? 'All' : selectedEnergyGrades.join(', ')}
+                  {selectedEnergyGrades.length === 0 ? 'Alle' : selectedEnergyGrades.join(', ')}
                 </div>
               </div>
               <div className="checkbox-filter-list">
@@ -673,8 +673,8 @@ function Filters() {
             <div className="filter-group">
               <div className="filter-label-row">
                 <label>
-                  <HelpLabel tooltip="Heating grade describes the heating energy source. Green means a very high share of renewable/non-electric heating. Yellow means moderate renewable heating. Orange is mostly electric heating. Red is predominantly direct electric or fossil-fuel heating.">
-                    Heating grade
+                  <HelpLabel tooltip="Oppvarmingskarakteren beskriver energikilden til oppvarmingen. Grønn betyr svært høy andel fornybar/ikke-elektrisk oppvarming. Gul betyr moderat andel fornybar oppvarming. Oransje er hovedsakelig elektrisk oppvarming. Rød er hovedsakelig direkte elektrisk oppvarming eller fossilt brensel.">
+                    Oppvarmingskarakter
                   </HelpLabel>
                 </label>
               </div>
@@ -687,8 +687,8 @@ function Filters() {
                     onChange={() => updateSelect('oppvarmingskarakter', 'all')}
                   />
                   <span className="filter-option-copy">
-                    <strong>All</strong>
-                    <span>all heating scores</span>
+                    <strong>Alle</strong>
+                    <span>alle oppvarmingskarakterer</span>
                   </span>
                 </label>
                 {heatingGrades.map((grade) => (
@@ -700,7 +700,7 @@ function Filters() {
                       onChange={() => updateSelect('oppvarmingskarakter', grade)}
                     />
                     <span className="filter-option-copy">
-                      <strong>{grade}</strong>
+                      <strong>{heatingGradeName(grade)}</strong>
                       <span>{heatingGradeMeaning(grade)}</span>
                     </span>
                   </label>

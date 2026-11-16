@@ -5,13 +5,27 @@ export const DEFAULT_ZOOM = 5.2;
 export const MAP_VIEW_MODES = [
   { value: 'markers', label: 'Bydeler i Oslo' },
   { value: 'tiles', label: 'Enkel bygg', isolated: true },
-  { value: 'upgrade', label: 'Upgrade priority' }
+  { value: 'upgrade', label: 'Oppgraderingsprioritet' }
 ];
 
 export const BYDEL_DISPLAY_MODES = [
-  { value: 'clusters', label: 'Clusters' },
-  { value: 'heatmap', label: 'Heatmap' }
+  { value: 'clusters', label: 'Klynger' },
+  { value: 'heatmap', label: 'Varmekart' }
 ];
+
+// Visningsnavn for oppvarmingskarakter (dataverdiene som RED/GREEN endres ikke).
+export const HEATING_GRADE_NAMES = {
+  GREEN: 'grønn',
+  LIGHTGREEN: 'lysegrønn',
+  YELLOW: 'gul',
+  ORANGE: 'oransje',
+  RED: 'rød'
+};
+
+export function heatingGradeName(value) {
+  const key = String(value ?? '').replace(/[\s_-]/g, '').toUpperCase();
+  return HEATING_GRADE_NAMES[key] || value;
+}
 
 export const SOURCE_IDS = {
   buildings: 'buildings',
