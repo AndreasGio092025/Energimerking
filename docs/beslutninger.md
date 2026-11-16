@@ -2,8 +2,12 @@
 
 Kort logg over valg som er viktige eller dyre å endre. Nyeste øverst.
 
+## 2026-11-16: Fagord og telling i kartet
+**Beslutning:** Energitallet heter «beregnet levert energi» (kWh/m² per år) overalt. Tall skal si hva de teller: statistikkpanelet og kartpunktene teller enheter (siste attest per enhet), «Enkel bygg» viser attester. Rå feilmeldinger fra server eller database vises aldri for brukeren.
+**Hvorfor:** Feltet fra Enova er beregnet levert energi; «energibehov» er et annet fagbegrep. Første reviewer-runde trodde panelet talte attester fordi tabellen har én rad per attest, men backend grupperer per enhet og frontend velger siste attest (andre runde, målt: 20 000 attester gir 16 900 enheter i Gamle Oslo). Enhetsnøkkelen i frontend følger ikke regelen helt; det er neste oppgave (se «Kjente åpne punkter» i CLAUDE.md).
+
 ## 2026-11-16: Bygg med én eller to enheter vises med fulle tall
-**Beslutning:** Bygg-oversikten viser karakter, beregnet energibehov og sammenligning også for bygg med én eller to enheter, selv om tallene da i praksis er én boligs.
+**Beslutning:** Bygg-oversikten viser karakter, beregnet levert energi og sammenligning også for bygg med én eller to enheter, selv om tallene da i praksis er én boligs.
 **Hvorfor:** Energiattestene er offentlige hos Enova og vises allerede per attest i kartet. Å skjule dem ville gitt de fleste småhus en nesten tom bygg-side. API-et gir fortsatt aldri bruksenhetsnummer, attestnummer eller `enhet_id`.
 
 ## 2026-11-16: Reserve-trinn for lignende bygg, og spredning i bygget

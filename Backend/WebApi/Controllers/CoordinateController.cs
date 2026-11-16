@@ -16,13 +16,22 @@ namespace WebApi.Controllers
     {
         private readonly EnergimerkingContext _context;
         private readonly EnergimerkingService _service;
-        private ILogger<EnergimerkingContext> _logger;
+        private readonly ILogger<ByggController> _logger;
+        // Sender aldri unntaksteksten til klienten: den kan inneholde detaljer om database og tilkobling.
+        // Feilen logges i stedet, og brukeren får en kort norsk melding.
+        private ObjectResult Feil(Exception ex, [System.Runtime.CompilerServices.CallerMemberName] string rute = "")
+        {
+            _logger.LogError(ex, "Feil i {Rute}", rute);
+            return StatusCode(500, "Noe gikk galt på serveren. Prøv igjen senere.");
+        }
+
 
         //Om det dukker opp feil se på constructoren. 
-        public ByggController(EnergimerkingContext context, EnergimerkingService service)
+        public ByggController(EnergimerkingContext context, EnergimerkingService service, ILogger<ByggController> logger)
         {
             _context = context;
             _service = service;
+            _logger = logger;
         }
         /// <summary>
         /// IKKE FERDIG
@@ -143,7 +152,7 @@ namespace WebApi.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Feil ved søk: {ex.Message}");
+                return Feil(ex);
             }
         }
         
@@ -183,7 +192,7 @@ namespace WebApi.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Feil ved søk: {ex.Message}");
+                return Feil(ex);
             }
         }
         
@@ -201,8 +210,7 @@ namespace WebApi.Controllers
             }
             catch(Exception ex)
             {
-                //_logger.LogError(ex.Message);
-                return StatusCode(500, ex.Message);
+                                return Feil(ex);
             }
             return Ok(jsonString);
         }*/
@@ -220,7 +228,7 @@ namespace WebApi.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Feil ved oppdatering: {ex.Message}");
+                return Feil(ex);
             }
         }
         /// <summary>
@@ -248,7 +256,7 @@ namespace WebApi.Controllers
                 return Ok(sumStuff);
             } catch (Exception ex)
             {
-                return StatusCode(500, $"Feil: {ex.Message}");
+                return Feil(ex);
             }
         }
         /// <summary>
@@ -277,11 +285,11 @@ namespace WebApi.Controllers
             }
             if (amount <= 0)
             {
-                return BadRequest("Amount must be greater than 0.");
+                return BadRequest("amount må være større enn 0.");
             }
             if (skip < 0)
             {
-                return BadRequest("Skip cannot be negative.");
+                return BadRequest("skip kan ikke være negativ.");
             }
             try
             {
@@ -290,7 +298,7 @@ namespace WebApi.Controllers
                 return Ok(sumStuff);
             } catch (Exception ex)
             {
-                return StatusCode(500, $"Feil: {ex.Message}");
+                return Feil(ex);
             }
         }
 
@@ -307,19 +315,19 @@ namespace WebApi.Controllers
         {
             if (minLatitude < -90 || minLatitude > 90 || maxLatitude < -90 || maxLatitude > 90)
             {
-                return BadRequest("Latitude must be between -90 and 90.");
+                return BadRequest("latitude må være mellom -90 og 90.");
             }
             if (minLongitude < -180 || minLongitude > 180 || maxLongitude < -180 || maxLongitude > 180)
             {
-                return BadRequest("Longitude must be between -180 and 180.");
+                return BadRequest("longitude må være mellom -180 og 180.");
             }
             if (amount <= 0)
             {
-                return BadRequest("Amount must be greater than 0.");
+                return BadRequest("amount må være større enn 0.");
             }
             if (skip < 0)
             {
-                return BadRequest("Skip cannot be negative.");
+                return BadRequest("skip kan ikke være negativ.");
             }
 
             try
@@ -336,7 +344,7 @@ namespace WebApi.Controllers
                 return Ok(sumStuff);
             } catch (Exception ex)
             {
-                return StatusCode(500, $"Feil: {ex.Message}");
+                return Feil(ex);
             }
         }
 
@@ -354,34 +362,34 @@ namespace WebApi.Controllers
         {
             if (minLatitude < -90 || minLatitude > 90 || maxLatitude < -90 || maxLatitude > 90)
             {
-                return BadRequest("Latitude must be between -90 and 90.");
+                return BadRequest("latitude må være mellom -90 og 90.");
             }
             if (minLongitude < -180 || minLongitude > 180 || maxLongitude < -180 || maxLongitude > 180)
             {
-                return BadRequest("Longitude must be between -180 and 180.");
+                return BadRequest("longitude må være mellom -180 og 180.");
             }
             if (limit <= 0 || limit > 5000)
             {
-                return BadRequest("Limit must be between 1 and 5000.");
+                return BadRequest("limit må være mellom 1 og 5000.");
             }
 
             var hasAnyCursor = cursorLat.HasValue || cursorLon.HasValue || cursorId.HasValue;
             var hasFullCursor = cursorLat.HasValue && cursorLon.HasValue && cursorId.HasValue;
             if (hasAnyCursor && !hasFullCursor)
             {
-                return BadRequest("cursorLat, cursorLon, and cursorId must be supplied together.");
+                return BadRequest("cursorLat, cursorLon og cursorId må oppgis sammen.");
             }
             if (cursorLat is < -90 or > 90)
             {
-                return BadRequest("cursorLat must be between -90 and 90.");
+                return BadRequest("cursorLat må være mellom -90 og 90.");
             }
             if (cursorLon is < -180 or > 180)
             {
-                return BadRequest("cursorLon must be between -180 and 180.");
+                return BadRequest("cursorLon må være mellom -180 og 180.");
             }
             if (cursorId is <= 0)
             {
-                return BadRequest("cursorId must be greater than 0.");
+                return BadRequest("cursorId må være større enn 0.");
             }
 
             try
@@ -399,7 +407,7 @@ namespace WebApi.Controllers
                 return Ok(result);
             } catch (Exception ex)
             {
-                return StatusCode(500, $"Feil: {ex.Message}");
+                return Feil(ex);
             }
         }
 
@@ -408,7 +416,7 @@ namespace WebApi.Controllers
         {
             if (id <= 0)
             {
-                return BadRequest("Id must be greater than 0.");
+                return BadRequest("id må være større enn 0.");
             }
 
             try
@@ -417,13 +425,13 @@ namespace WebApi.Controllers
 
                 if (result == null)
                 {
-                    return NotFound("Tile point was not found.");
+                    return NotFound("Fant ikke punktet.");
                 }
 
                 return Ok(result);
             } catch (Exception ex)
             {
-                return StatusCode(500, $"Feil: {ex.Message}");
+                return Feil(ex);
             }
         }
         /// <summary>
@@ -454,7 +462,7 @@ namespace WebApi.Controllers
                 return Ok(sumStuff);
             } catch (Exception ex)
             {
-                return StatusCode(500, $"Feil: {ex.Message}");
+                return Feil(ex);
             }
         }
     }

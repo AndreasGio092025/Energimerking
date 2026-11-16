@@ -18,12 +18,12 @@ Ukjent attestnummer eller bygningsnummer gir HTTP 404. Grunnlaget er `mv_siste_a
 
 **Personvern:** API-et gir aldri bruksenhetsnummer, attestnummer eller `enhet_id`. Tallene er summer eller
 medianer over enhetene i bygget. Har bygget bare én eller to enheter (de fleste småhus), er tallene i praksis
-den ene boligens karakter og beregnede energibehov. Det er bevisst (eieren 2026-11-16): energiattestene er
+den ene boligens karakter og beregnede leverte energi. Det er bevisst (eieren 2026-11-16): energiattestene er
 offentlige hos Enova og vises allerede per attest i kartet. `andel_enheter_bedre_enn_lignende` vises likevel
 bare fra 3 enheter, fordi den beskriver spredning i bygget.
 
 **Energitall** (`median_kwh_m2` og andelene) er *beregnet* levert energi fra attesten, ikke målt forbruk.
-Grensesnittet skal si «beregnet energibehov», ikke «bruker» eller «forbruk».
+Grensesnittet skal si «beregnet levert energi» (kWh/m² per år), ikke «energibehov», «bruker» eller «forbruk».
 
 ### `fra-attest`
 | Felt | Type | Enhet | Betydning |
@@ -68,10 +68,10 @@ Ordningene blandes aldri; hver rad gjelder bare attester i den ordningen.
 | `nok_data` | sann/usann | – | `true` hvis `antall_enheter` ≥ `minimum_lignende`. Er den `false`, er feltene under null, og grensesnittet skal si at det er for få lignende bygg. |
 | `karakterfordeling` | objekt eller null | andel 0–1 | Andel av lignende enheter per energikarakter, A–G. Summerer til 1. |
 | `median_kwh_m2` | desimaltall eller null | kWh/m² per år | Median for lignende enheter, rundet til én desimal. |
-| `andel_med_hoyere_energibruk` | desimaltall eller null | andel 0–1 | Andel av lignende enheter med høyere beregnet energibehov per m² enn byggets median. 0,7 betyr at bygget har lavere beregnet energibehov enn 70 % av lignende enheter. |
-| `andel_enheter_bedre_enn_lignende` | desimaltall eller null | andel 0–1 | Andel av *byggets* enheter med lavere beregnet energibehov per m² enn `median_kwh_m2` for lignende. Viser spredning i bygget ("6 av 10 enheter har lavere beregnet energibehov enn vanlig"). Null hvis bygget har under 3 enheter i ordningen, eller hvis `nok_data` er `false`. |
-| `antall_enheter_bedre_enn_lignende` | heltall eller null | enheter | Antall av byggets enheter (med energitall) som har lavere beregnet energibehov enn `median_kwh_m2` for lignende. Null i de samme tilfellene som andelen over. Frontend viser "X av N enheter" med dette tallet, så ingenting regnes ut i nettleseren. |
-| `antall_enheter_med_energitall` | heltall eller null | enheter | N i "X av N": byggets enheter i ordningen som har beregnet energibehov. Null når feltet over er null. |
+| `andel_med_hoyere_energibruk` | desimaltall eller null | andel 0–1 | Andel av lignende enheter med høyere beregnet levert energi per m² enn byggets median. 0,7 betyr at bygget har lavere beregnet levert energi enn 70 % av lignende enheter. |
+| `andel_enheter_bedre_enn_lignende` | desimaltall eller null | andel 0–1 | Andel av *byggets* enheter med lavere beregnet levert energi per m² enn `median_kwh_m2` for lignende. Viser spredning i bygget ("6 av 10 enheter har lavere beregnet levert energi enn vanlig"). Null hvis bygget har under 3 enheter i ordningen, eller hvis `nok_data` er `false`. |
+| `antall_enheter_bedre_enn_lignende` | heltall eller null | enheter | Antall av byggets enheter (med energitall) som har lavere beregnet levert energi enn `median_kwh_m2` for lignende. Null i de samme tilfellene som andelen over. Frontend viser "X av N enheter" med dette tallet, så ingenting regnes ut i nettleseren. |
+| `antall_enheter_med_energitall` | heltall eller null | enheter | N i "X av N": byggets enheter i ordningen som har beregnet levert energi. Null når feltet over er null. |
 
 Frontend skal vise byggets `karakterfordeling` (antall enheter per karakter) synlig sammen med medianen, så spredningen i bygget ikke skjules.
 

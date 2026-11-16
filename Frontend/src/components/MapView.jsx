@@ -22,6 +22,7 @@ import {
   LIGHT_MAP_STYLE_URL,
   MAP_VIEW_MODES,
   SOURCE_IDS,
+  heatingGradeName,
 } from "../utils/constants.js";
 import "../styles/map-view.css";
 
@@ -47,32 +48,32 @@ function hasValue(value) {
   return value !== null && value !== undefined && value !== "";
 }
 
-function displayValue(value, fallback = "Not registered") {
+function displayValue(value, fallback = "Ikke registrert") {
   return hasValue(value) ? value : fallback;
 }
 
 const POPUP_HELP = {
   grade:
-    "Energy grade runs from A to G. A is best and G is weakest. It is based on calculated delivered energy per square meter for normal use.",
-  unit: "The building unit number, called bruksenhetsnummer/bruksenhetsNr in the source data.",
+    "Energikarakteren går fra A til G. A er best og G er dårligst. Den bygger på beregnet levert energi per kvadratmeter per år ved normal bruk.",
+  unit: "Enhetsnummeret (bruksenhetsnummer) til enheten i bygget.",
   energyUse:
-    "Calculated delivered energy per square meter for normal use, shown as kWh/m2.",
-  built: "The construction year registered for the building or unit.",
-  address: "The registered street address for this building or unit.",
-  municipality: "The municipality name when available.",
-  gard: "Norwegian property register farm number.",
-  bruk: "Norwegian property register usage number.",
-  feste: "Leasehold number from the property register, when registered.",
-  andel: "Share number from the property register, when registered.",
+    "Beregnet levert energi per kvadratmeter per år ved normal bruk, vist i kWh/m² per år. Tallet er beregnet, ikke målt.",
+  built: "Byggeåret som er registrert for bygget eller enheten.",
+  address: "Den registrerte adressen til dette bygget eller denne enheten.",
+  municipality: "Navnet på kommunen, når det finnes.",
+  gard: "Gårdsnummer fra matrikkelen.",
+  bruk: "Bruksnummer fra matrikkelen.",
+  feste: "Festenummer fra matrikkelen, når det er registrert.",
+  andel: "Andelsnummer fra matrikkelen, når det er registrert.",
   seksjon:
-    "Section number from the property register, often used for condominiums/sections.",
+    "Seksjonsnummer fra matrikkelen, ofte brukt for eierseksjoner.",
   organisation:
-    "Organisation number connected to the registered certificate, when available.",
-  certificate: "Energy certificate identifier from Enova/energy marking data.",
-  issued: "Date when the energy certificate was issued.",
+    "Organisasjonsnummer knyttet til den registrerte energiattesten, når det finnes.",
+  certificate: "Attestnummeret til energiattesten, fra Enova.",
+  issued: "Datoen energiattesten ble utstedt.",
   heatingGrade:
-    "Heating grade is the red-to-green score for the installed heating system. Green is best and it is independent of the energy grade.",
-  material: "Registered material or construction information, when present.",
+    "Oppvarmingskarakteren er skalaen fra rød til grønn for oppvarmingssystemet i bygget. Grønn er best, og den er uavhengig av energikarakteren.",
+  material: "Registrert materialvalg eller byggeinformasjon, når det finnes.",
 };
 
 function popupHelp(text) {
@@ -107,7 +108,7 @@ function popupMetric(label, value, modifier = "", tooltip = "") {
   return `
     <div class="${metricClass}">
       <span>${popupLabel(label, tooltip)}</span>
-      <strong class="${valueClass}">${escapeHtml(displayValue(value, "N/A"))}</strong>
+      <strong class="${valueClass}">${escapeHtml(displayValue(value, "Mangler"))}</strong>
     </div>
   `;
 }
@@ -119,7 +120,7 @@ function markerPopupMetric(label, value, tooltip = "") {
   return `
     <div class="marker-popup-metric">
       <span class="marker-popup-metric-label">${popupLabel(label, tooltip)}</span>
-      <strong class="${valueClass}">${escapeHtml(displayValue(value, "N/A"))}</strong>
+      <strong class="${valueClass}">${escapeHtml(displayValue(value, "Mangler"))}</strong>
     </div>
   `;
 }
@@ -141,12 +142,12 @@ function firstPopulated(...values) {
 
 function popupHtml(properties) {
   const address = escapeHtml(
-    displayValue(properties.adresse, "Unknown address"),
+    displayValue(properties.adresse, "Ukjent adresse"),
   );
   const municipality = hasValue(properties.kommunenavn)
     ? escapeHtml(properties.kommunenavn)
     : "";
-  const energyGrade = displayValue(properties.energikarakter, "N/A");
+  const energyGrade = displayValue(properties.energikarakter, "Mangler");
   const energyGradeDisplay = escapeHtml(energyGrade);
   const energyGradeClass = energyClass(energyGrade);
   const energyUse =
@@ -167,36 +168,36 @@ function popupHtml(properties) {
       <div class="marker-popup-header">
         <div class="marker-popup-heading">
           <div class="marker-popup-meta">
-            <span class="marker-popup-kicker">Energy certificate</span>
+            <span class="marker-popup-kicker">Energiattest</span>
             ${municipality ? `<span class="marker-popup-place">${municipality}</span>` : ""}
           </div>
           <h2 class="marker-popup-title">${address}</h2>
         </div>
         <div class="marker-popup-grade ${energyGradeClass}">
-          <span>Grade</span>
+          <span>Energikarakter</span>
           <strong>${energyGradeDisplay}</strong>
         </div>
       </div>
-      <div class="marker-popup-snapshot" aria-label="Building summary">
-        ${markerPopupMetric("Unit", unitNumber, POPUP_HELP.unit)}
-        ${markerPopupMetric("Energy use", energyUse, POPUP_HELP.energyUse)}
-        ${markerPopupMetric("Built", properties.byggeaar, POPUP_HELP.built)}
+      <div class="marker-popup-snapshot" aria-label="Oppsummering av bygget">
+        ${markerPopupMetric("Enhet", unitNumber, POPUP_HELP.unit)}
+        ${markerPopupMetric("Beregnet levert energi", energyUse, POPUP_HELP.energyUse)}
+        ${markerPopupMetric("Byggeår", properties.byggeaar, POPUP_HELP.built)}
       </div>
       <div class="marker-popup-body">
-        <div class="marker-popup-section-title">Certificate details</div>
+        <div class="marker-popup-section-title">Detaljer om attesten</div>
         <div class="marker-popup-detail-list">
-          ${markerPopupDetail("Address", properties.adresse, POPUP_HELP.address)}
-          ${markerPopupDetail("Municipality", properties.kommunenavn, POPUP_HELP.municipality)}
+          ${markerPopupDetail("Adresse", properties.adresse, POPUP_HELP.address)}
+          ${markerPopupDetail("Kommune", properties.kommunenavn, POPUP_HELP.municipality)}
           ${markerPopupDetail("Gnr.", properties.gard)}
           ${markerPopupDetail("Bnr.", properties.bruksnummer, POPUP_HELP.bruk)}
           ${markerPopupDetail("Festenr.", properties.feste, POPUP_HELP.feste)}
           ${markerPopupDetail("Andel", properties.andel, POPUP_HELP.andel)}
           ${markerPopupDetail("Seksjon", properties.seksjon, POPUP_HELP.seksjon)}
-          ${markerPopupDetail("Organisation no.", properties.organisasjonsNr, POPUP_HELP.organisation)}
-          ${markerPopupDetail("Certificate no.", properties.attestnummer, POPUP_HELP.certificate)}
-          ${markerPopupDetail("Issued", properties.utstedelsesdato, POPUP_HELP.issued)}
-          ${markerPopupDetail("Heating grade", properties.oppvarmingskarakter, POPUP_HELP.heatingGrade)}
-          ${markerPopupDetail("Material", properties.materialvalg, POPUP_HELP.material)}
+          ${markerPopupDetail("Organisasjonsnr.", properties.organisasjonsNr, POPUP_HELP.organisation)}
+          ${markerPopupDetail("Attestnummer", properties.attestnummer, POPUP_HELP.certificate)}
+          ${markerPopupDetail("Utstedt", properties.utstedelsesdato, POPUP_HELP.issued)}
+          ${markerPopupDetail("Oppvarmingskarakter", heatingGradeName(properties.oppvarmingskarakter), POPUP_HELP.heatingGrade)}
+          ${markerPopupDetail("Materialvalg", properties.materialvalg, POPUP_HELP.material)}
         </div>
       </div>
       ${
@@ -215,9 +216,9 @@ function priorityClass(score) {
 }
 
 function priorityLabel(score) {
-  if (score >= 75) return "High priority";
-  if (score >= 45) return "Medium priority";
-  return "Low priority";
+  if (score >= 75) return "Høy prioritet";
+  if (score >= 45) return "Middels prioritet";
+  return "Lav prioritet";
 }
 
 function scoreBar(label, score) {
@@ -259,7 +260,7 @@ function upgradeDataRows(dataUsed) {
       (item) => `
       <div class="upgrade-data-item ${item.missing ? "is-missing" : ""}">
         <span>${escapeHtml(item.label)}</span>
-        <strong>${escapeHtml(displayValue(item.value, "N/A"))}</strong>
+        <strong>${escapeHtml(displayValue(item.value, "Mangler"))}</strong>
       </div>
     `,
     )
@@ -268,7 +269,7 @@ function upgradeDataRows(dataUsed) {
 
 function upgradePopupHtml(properties) {
   const address = escapeHtml(
-    displayValue(properties.adresse, "Unknown address"),
+    displayValue(properties.adresse, "Ukjent adresse"),
   );
   const energyUse =
     properties.beregnetLevertEnergiTotaltkWhm2 ?? properties.energibruk_kwh_m2;
@@ -283,9 +284,9 @@ function upgradePopupHtml(properties) {
     <div class="popup-card popup-card-upgrade">
       <div class="popup-header">
         <div class="popup-heading">
-          <div class="popup-kicker">Upgrade priority</div>
+          <div class="popup-kicker">Oppgraderingsprioritet</div>
           <div class="popup-title">${address}</div>
-          <div class="popup-subtitle">Upgrade estimate from certificate, heating, energy use, age, and data completeness.</div>
+          <div class="popup-subtitle">Oppgraderingsanslag basert på energiattest, oppvarming, beregnet levert energi, alder og hvor komplette dataene er.</div>
         </div>
         <div class="priority-badge ${priorityClass(score)}">
           <span>${escapeHtml(priority)}</span>
@@ -295,7 +296,7 @@ function upgradePopupHtml(properties) {
 
       <div class="upgrade-confidence">
         <div>
-          <div class="upgrade-confidence-label">Estimate confidence</div>
+          <div class="upgrade-confidence-label">Sikkerhet i anslaget</div>
           <strong>${escapeHtml(insights.confidence.label)}</strong>
           <span>${escapeHtml(insights.confidence.copy)}</span>
         </div>
@@ -305,32 +306,32 @@ function upgradePopupHtml(properties) {
       </div>
 
       <div class="popup-metrics">
-        ${popupMetric("Energy grade", properties.energikarakter, "popup-metric-compact", POPUP_HELP.grade)}
-        ${popupMetric("Heating grade", properties.oppvarmingskarakter, "popup-metric-compact", POPUP_HELP.heatingGrade)}
-        ${popupMetric("Energy use", energyUse, "popup-metric-compact", POPUP_HELP.energyUse)}
-        ${popupMetric("Built", properties.byggeaar, "popup-metric-compact", POPUP_HELP.built)}
+        ${popupMetric("Energikarakter", properties.energikarakter, "popup-metric-compact", POPUP_HELP.grade)}
+        ${popupMetric("Oppvarmingskarakter", heatingGradeName(properties.oppvarmingskarakter), "popup-metric-compact", POPUP_HELP.heatingGrade)}
+        ${popupMetric("Beregnet levert energi", energyUse, "popup-metric-compact", POPUP_HELP.energyUse)}
+        ${popupMetric("Byggeår", properties.byggeaar, "popup-metric-compact", POPUP_HELP.built)}
       </div>
 
       <div class="score-breakdown">
-        ${scoreBar("Total priority", score)}
-        ${scoreBar("Energy upgrade need", properties.energyUpgradeScore)}
-        ${scoreBar("Heating upgrade need", properties.heatingUpgradeScore)}
+        ${scoreBar("Samlet prioritet", score)}
+        ${scoreBar("Behov for energioppgradering", properties.energyUpgradeScore)}
+        ${scoreBar("Behov for oppgradering av oppvarming", properties.heatingUpgradeScore)}
       </div>
 
       <div class="upgrade-section">
-        <div class="popup-kicker">Main drivers</div>
+        <div class="popup-kicker">Viktigste faktorer</div>
         <div class="upgrade-drivers">
           ${upgradeDriverRows(insights.drivers)}
         </div>
       </div>
 
       <div class="upgrade-actions">
-        <div class="popup-kicker">Recommended checks</div>
+        <div class="popup-kicker">Anbefalte kontroller</div>
         <ul>${upgradeRecommendationItems(insights.recommendations)}</ul>
       </div>
 
       <div class="upgrade-section">
-        <div class="popup-kicker">Data used</div>
+        <div class="popup-kicker">Data som er brukt</div>
         <div class="upgrade-data-grid">
           ${upgradeDataRows(insights.dataUsed)}
         </div>
@@ -609,20 +610,20 @@ function unitsToListPayload(units) {
 }
 
 function nearbyPopupHtml(properties) {
-  const coordinateId = escapeHtml(properties.coordinateid ?? "unknown");
-  const latitude = escapeHtml(properties.latitude ?? "N/A");
-  const longitude = escapeHtml(properties.longitude ?? "N/A");
+  const coordinateId = escapeHtml(properties.coordinateid ?? "ukjent");
+  const latitude = escapeHtml(properties.latitude ?? "Mangler");
+  const longitude = escapeHtml(properties.longitude ?? "Mangler");
   const unitCount = properties.unitCount ?? 1;
 
   let html = `
     <div class="popup-card popup-card-small">
-      <div class="popup-kicker">Nearby result</div>
-      <div class="popup-title">Coordinate #${coordinateId}</div>
-      <div class="popup-subtitle">Lat ${latitude}, Lng ${longitude}</div>
+      <div class="popup-kicker">Treff i nærheten</div>
+      <div class="popup-title">Koordinat nr. ${coordinateId}</div>
+      <div class="popup-subtitle">Breddegrad ${latitude}, lengdegrad ${longitude}</div>
   `;
 
   if (unitCount > 1) {
-    html += `<div class="popup-grid"><div class="popup-metric"><span>Building units</span><strong>${unitCount}</strong></div></div>`;
+    html += `<div class="popup-grid"><div class="popup-metric"><span>Antall enheter</span><strong>${unitCount}</strong></div></div>`;
   } else {
     const unitNumber = escapeHtml(
       firstPopulated(
@@ -634,11 +635,11 @@ function nearbyPopupHtml(properties) {
         properties.BrukenhetsNR,
         properties.BruksenhetsNr,
         properties.Bruksenhetsnummer,
-      ) || "N/A",
+      ) || "Mangler",
     );
     html += `
       <div class="popup-grid">
-        <div class="popup-metric"><span>Unit number</span><strong>${unitNumber}</strong></div>
+        <div class="popup-metric"><span>Enhetsnummer</span><strong>${unitNumber}</strong></div>
       </div>
     `;
   }
@@ -649,7 +650,7 @@ function nearbyPopupHtml(properties) {
 
 function nearbyUnitsListHtml(
   units,
-  address = "Unknown address",
+  address = "Ukjent adresse",
   coordinates = [0, 0],
 ) {
   const parsedUnits = JSON.parse(units);
@@ -659,7 +660,7 @@ function nearbyUnitsListHtml(
       (u) => `
       <div class="nearby-unit-item" data-coordinateid="${u.id}">
         <div class="nearby-unit-row">
-          <div class="nearby-unit-title">${escapeHtml(u.adresse || "Unknown address")}</div>
+          <div class="nearby-unit-title">${escapeHtml(u.adresse || "Ukjent adresse")}</div>
           ${
             u.energikarakter
               ? `<div class="energy-badge energy-badge-small ${energyClass(u.energikarakter)}">${escapeHtml(u.energikarakter)}</div>`
@@ -668,7 +669,7 @@ function nearbyUnitsListHtml(
         </div>
         ${
           u.bruksenhetsNr || u.poststed || u.kommunenavn
-            ? `<div class="nearby-unit-location">${escapeHtml([u.bruksenhetsNr ? `Unit ${u.bruksenhetsNr}` : "", u.poststed, u.kommunenavn].filter(Boolean).join(" | "))}</div>`
+            ? `<div class="nearby-unit-location">${escapeHtml([u.bruksenhetsNr ? `Enhet ${u.bruksenhetsNr}` : "", u.poststed, u.kommunenavn].filter(Boolean).join(" | "))}</div>`
             : ""
         }
         ${
@@ -683,9 +684,9 @@ function nearbyUnitsListHtml(
 
   return `
     <div class="popup-card popup-card-units" data-lng="${coordinates[0]}" data-lat="${coordinates[1]}">
-      <div class="popup-kicker">Building units at location</div>
+      <div class="popup-kicker">Enheter på stedet</div>
       <div class="popup-title">${addressDisplay}</div>
-      <div class="popup-subtitle"><strong>${parsedUnits.length}</strong> units</div>
+      <div class="popup-subtitle"><strong>${parsedUnits.length}</strong> enheter</div>
       <div class="nearby-units-list">
         ${unitsHtml}
       </div>
@@ -740,8 +741,8 @@ function openPopup(map, coordinates, html) {
 
 function formatEnergy(value) {
   return Number.isFinite(value) && value > 0
-    ? `${Math.round(value)} kWh/m2`
-    : "N/A";
+    ? `${Math.round(value)} kWh/m² per år`
+    : "Mangler";
 }
 
 function MapLegend({ heatmapStats }) {
@@ -755,19 +756,19 @@ function MapLegend({ heatmapStats }) {
 
   return (
     <div className="map-legend">
-      <div className="legend-kicker">Information card</div>
+      <div className="legend-kicker">Infokort</div>
       {showHeatmapLegend ? (
         <>
-          <div className="legend-copy">Energy use per building location</div>
+          <div className="legend-copy">Beregnet levert energi per byggested</div>
           <div className="legend-gradient" />
           <div className="legend-scale">
             <span>
               <strong>{heatmapStart}</strong>
-              <small>lower</small>
+              <small>lavere</small>
             </span>
             <span>
               <strong>{heatmapEnd}</strong>
-              <small>higher</small>
+              <small>høyere</small>
             </span>
           </div>
         </>
@@ -775,27 +776,27 @@ function MapLegend({ heatmapStats }) {
         <div className="legend-list">
           <div className="legend-item">
             <span className="legend-dot dot-building" />
-            Tile-mode building points
+            Attester i Enkel bygg
           </div>
           <div className="legend-copy">
-            Colored by energy grade from the tile properties.
+            Farget etter energikarakter.
           </div>
         </div>
       ) : viewMode === "upgrade" ? (
         <>
           <div className="legend-copy">
-            Upgrade priority from existing certificate data. Building cards
-            explain the score.
+            Oppgraderingsprioritet basert på eksisterende attestdata. Byggkortene
+            forklarer poengsummen.
           </div>
           <div className="legend-gradient priority-gradient" />
           <div className="legend-scale">
             <span>
-              <strong>Low</strong>
-              <small>better condition</small>
+              <strong>Lav</strong>
+              <small>bedre tilstand</small>
             </span>
             <span>
-              <strong>High</strong>
-              <small>inspect first</small>
+              <strong>Høy</strong>
+              <small>undersøk først</small>
             </span>
           </div>
         </>
@@ -803,19 +804,19 @@ function MapLegend({ heatmapStats }) {
         <div className="legend-list">
           <div className="legend-item">
             <span className="legend-dot dot-cluster-small" />
-            Small cluster / individual
+            Liten klynge / enkeltenhet
           </div>
           <div className="legend-item">
             <span className="legend-dot dot-cluster-medium" />
-            Medium cluster
+            Middels klynge
           </div>
           <div className="legend-item">
             <span className="legend-dot dot-cluster-large" />
-            Large cluster
+            Stor klynge
           </div>
           <div className="legend-item">
             <span className="legend-dot dot-nearby" />
-            radios result
+            Resultat fra søk i radius
           </div>
         </div>
       )}
@@ -843,7 +844,7 @@ function CollapsedModeDock() {
   if (sidebarOpen) return null;
 
   return (
-    <div className="collapsed-mode-dock" aria-label="Map view modes">
+    <div className="collapsed-mode-dock" aria-label="Visningsvalg for kartet">
       {MODE_DOCK_ITEMS.map((item) => {
         const Icon = item.Icon;
 
@@ -1629,6 +1630,13 @@ function MapView({
       center: DEFAULT_CENTER,
       zoom: DEFAULT_ZOOM,
       attributionControl: false,
+      locale: {
+        "Map.Title": "Kart",
+        "NavigationControl.ZoomIn": "Zoom inn",
+        "NavigationControl.ZoomOut": "Zoom ut",
+        "NavigationControl.ResetBearing": "Dra for å rotere kartet, klikk for å nullstille retningen til nord",
+        "Popup.Close": "Lukk popup",
+      },
     });
 
     map.addControl(
@@ -1686,7 +1694,7 @@ function MapView({
         const address =
           selected?.properties?.adresse ||
           feature.properties.adresse ||
-          "Unknown address";
+          "Ukjent adresse";
         setSelectedFeature(selected || null);
         popupRef.current?.remove();
         popupRef.current = openPopup(
@@ -1722,7 +1730,7 @@ function MapView({
         const address =
           selected?.properties?.adresse ||
           feature.properties.adresse ||
-          "Unknown address";
+          "Ukjent adresse";
 
         setSelectedFeature(selected || null);
         popupRef.current?.remove();
@@ -1759,7 +1767,7 @@ function MapView({
         const address =
           selected?.properties?.adresse ||
           feature.properties.adresse ||
-          "Unknown address";
+          "Ukjent adresse";
 
         setSelectedFeature(selected || null);
         popupRef.current?.remove();
@@ -1920,7 +1928,7 @@ function MapView({
             ? findFeatureById(allFeaturesRef.current, firstBuildingId)
             : null;
           const address =
-            firstBuilding?.properties?.adresse || "Unknown address";
+            firstBuilding?.properties?.adresse || "Ukjent adresse";
           const enrichedUnits = parsedUnits.map(
             (unit) => findFeatureById(allFeaturesRef.current, unit.id) || unit,
           );
@@ -2120,7 +2128,7 @@ function MapView({
       searchedFeature,
     );
     const coordinates = searchedFeature.geometry.coordinates.slice();
-    const address = searchedFeature.properties?.adresse || "Unknown address";
+    const address = searchedFeature.properties?.adresse || "Ukjent adresse";
 
     popupRef.current?.remove();
     popupRef.current = openPopup(
@@ -2209,20 +2217,20 @@ function MapView({
         )}
         {nearbySearchEnabled && (
           <div className="map-pill is-hint">
-            Click the map to search within {radiusInMeters.toLocaleString()} m
+            Klikk i kartet for å søke innenfor {radiusInMeters.toLocaleString()} m
           </div>
         )}
         {isSearchingNearby && (
           <div className="map-pill is-loading">
             <span className="map-pill-loader" aria-hidden="true" />
-            Finding nearby buildings within {radiusInMeters.toLocaleString()}{" "}
-            m...
+            Finner bygg i nærheten innenfor {radiusInMeters.toLocaleString()}{" "}
+            m …
           </div>
         )}
         {nearbyState.results.length > 0 && (
           <div className="map-pill is-count">
-            <strong>{nearbyState.results.length}</strong> nearby loaded
-            coordinates
+            <strong>{nearbyState.results.length}</strong> enheter i nærheten
+            (maks 200)
           </div>
         )}
       </div>

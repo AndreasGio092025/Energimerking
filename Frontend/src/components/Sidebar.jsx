@@ -23,13 +23,13 @@ function Sidebar({ isSearchingNearby }) {
     <aside className={`sidebar-shell ${sidebarOpen ? "is-open" : "is-closed"}`}>
       <div className="sidebar-panel">
         <div className="sidebar-top">
-          <div className="sidebar-controls" aria-label="Map tools">
+          <div className="sidebar-controls" aria-label="Kartverktøy">
             <button
               type="button"
               className={`tool-button icon-tool panel-tool ${sidebarOpen ? "active" : ""}`}
               onClick={toggleSidebar}
               aria-pressed={sidebarOpen}
-              aria-label="Toggle filters"
+              aria-label="Vis eller skjul filtre"
             >
               <span className="tool-glyph" aria-hidden="true">
                 <SlidersHorizontal
@@ -37,15 +37,15 @@ function Sidebar({ isSearchingNearby }) {
                   strokeWidth={2.2}
                 />
               </span>
-              <span className="sr-only">Filters</span>
+              <span className="sr-only">Filtre</span>
             </button>
             <button
               type="button"
               className={`tool-button radius-tool ${nearbySearchEnabled ? "active" : ""}`}
               onClick={toggleNearbySearch}
               aria-pressed={nearbySearchEnabled}
-              aria-label="Toggle radius search. When enabled, click the map to search for buildings inside the selected radius."
-              title="Toggle radius search. When enabled, click the map to search for buildings inside the selected radius."
+              aria-label="Slå søk i radius av eller på. Når det er på, klikker du i kartet for å søke etter bygg innenfor valgt radius."
+              title="Slå søk i radius av eller på. Når det er på, klikker du i kartet for å søke etter bygg innenfor valgt radius."
             >
               <span className="tool-copy">
                 <span className="tool-label">
@@ -61,7 +61,7 @@ function Sidebar({ isSearchingNearby }) {
                     <span className="radius-switch-thumb" />
                   </span>
                   <strong className="tool-state">
-                    {nearbySearchEnabled ? "On" : "Off"}
+                    {nearbySearchEnabled ? "På" : "Av"}
                   </strong>
                 </span>
               </span>
@@ -70,7 +70,7 @@ function Sidebar({ isSearchingNearby }) {
               type="button"
               className="tool-button icon-tool theme-tool"
               onClick={toggleTheme}
-              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              aria-label={theme === "dark" ? "Bytt til lyst tema" : "Bytt til mørkt tema"}
             >
               <span className="tool-glyph" aria-hidden="true">
                 <ThemeIcon
@@ -79,7 +79,7 @@ function Sidebar({ isSearchingNearby }) {
                 />
               </span>
               <span className="sr-only">
-                {theme === "dark" ? "Dark mode" : "Light mode"}
+                {theme === "dark" ? "Mørkt tema" : "Lyst tema"}
               </span>
             </button>
           </div>
@@ -91,13 +91,13 @@ function Sidebar({ isSearchingNearby }) {
                 className="clear-nearby-button"
                 onClick={clearNearby}
               >
-                Clear radius results
+                Fjern resultater fra radiussøk
               </button>
             )}
 
             {isSearchingNearby && (
               <div className="sidebar-alert">
-                Searching nearby buildings for the clicked map location.
+                Søker etter bygg nær stedet du klikket på i kartet.
               </div>
             )}
           </div>

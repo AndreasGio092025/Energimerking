@@ -57,7 +57,7 @@ public class BydelStatsController : ControllerBase
     {
         if (!Bydeler.TryGetValue(bydelId, out var bydel))
         {
-            return NotFound(new { message = $"Unknown Oslo bydel: {bydelId}" });
+            return NotFound(new { message = $"Ukjent bydel i Oslo: {bydelId}" });
         }
 
         var payload = await _cache.GetOrCreateAsync<object>(
@@ -179,7 +179,8 @@ public class BydelStatsController : ControllerBase
         var apiKey = _configuration["Nobil:ApiKey"] ?? Environment.GetEnvironmentVariable("NOBIL_API_KEY");
         if (string.IsNullOrWhiteSpace(apiKey))
         {
-            return new { publicChargers = (int?)null, fastChargers = (int?)null, status = "Set Nobil:ApiKey or NOBIL_API_KEY to load charger stats." };
+            _logger.LogWarning("NOBIL-nøkkel mangler: sett Nobil:ApiKey eller NOBIL_API_KEY for å vise ladestasjoner.");
+            return new { publicChargers = (int?)null, fastChargers = (int?)null, status = "Ladestasjoner er ikke tilgjengelige." };
         }
 
         try
@@ -213,7 +214,7 @@ public class BydelStatsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to fetch NOBIL charger stats.");
-            return new { publicChargers = (int?)null, fastChargers = (int?)null, status = "NOBIL data unavailable." };
+            return new { publicChargers = (int?)null, fastChargers = (int?)null, status = "Fikk ikke hentet ladestasjoner fra NOBIL." };
         }
     }
 
@@ -259,7 +260,7 @@ public class BydelStatsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to fetch SSB table {TableId}.", tableId);
-            return new PxSeriesResult([], null, "SSB statistics unavailable.");
+            return new PxSeriesResult([], null, "Fikk ikke hentet statistikk fra SSB.");
         }
     }
 
@@ -288,7 +289,7 @@ public class BydelStatsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to fetch PxWeb table {TablePath}.", tablePath);
-            return new PxSeriesResult([], null, "Oslo statistics unavailable.");
+            return new PxSeriesResult([], null, "Fikk ikke hentet statistikk fra Oslo kommune.");
         }
     }
 
