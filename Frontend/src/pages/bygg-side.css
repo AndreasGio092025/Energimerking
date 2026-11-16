@@ -1,0 +1,292 @@
+.bygg-side {
+  min-height: 100vh;
+  background: var(--bg, #f8fafc);
+  color: var(--text, #202124);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.bygg-innhold {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.bygg-verktoy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.bygg-tilbake {
+  color: var(--accent, #1a73e8);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.bygg-tilbake:hover {
+  text-decoration: underline;
+}
+
+.bygg-skriv-ut {
+  padding: 8px 14px;
+  border: 1px solid var(--accent, #1a73e8);
+  border-radius: 8px;
+  background: var(--accent, #1a73e8);
+  color: #fff;
+  font-weight: 600;
+}
+
+.bygg-side h1 {
+  margin: 0 0 4px;
+  font-size: 1.6rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.bygg-side h2 {
+  margin: 0 0 2px;
+  font-size: 1.3rem;
+}
+
+.bygg-side h4 {
+  margin: 16px 0 6px;
+  font-size: 1rem;
+}
+
+.kicker {
+  margin: 0;
+  color: var(--muted, #5f6368);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bygg-fakta {
+  margin: 2px 0;
+}
+
+.liten {
+  color: var(--muted, #5f6368);
+  font-size: 0.85rem;
+}
+
+.advarsel {
+  margin: 16px 0;
+  padding: 10px 14px;
+  border-left: 4px solid #f9ab00;
+  border-radius: 4px;
+  background: #fff8e1;
+  color: #3c3200;
+}
+
+.ordning,
+.forklaring {
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid var(--border, #dadce0);
+  border-radius: 12px;
+  background: var(--panel, #fff);
+  break-inside: avoid;
+}
+
+.periode {
+  margin: 0 0 12px;
+  color: var(--muted, #5f6368);
+}
+
+.nokkeltall {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 0 0 6px;
+}
+
+.nokkeltall dt {
+  color: var(--muted, #5f6368);
+  font-size: 0.85rem;
+}
+
+.nokkeltall dd {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.soyle-figur {
+  margin: 16px 0 0;
+}
+
+.soyle-figur figcaption {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.soyler {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.soyle {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.soyle-felt {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 140px;
+  border-bottom: 2px solid var(--border, #dadce0);
+}
+
+.soyle-stolpe {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+}
+
+.soyle-antall {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.soyle-bokstav {
+  font-weight: 700;
+}
+
+.karakter-A { background: #1b8a3a; }
+.karakter-B { background: #6aaa2a; }
+.karakter-C { background: #b5c61f; }
+.karakter-D { background: #f2c200; }
+.karakter-E { background: #f09a00; }
+.karakter-F { background: #e5611f; }
+.karakter-G { background: #d1281e; }
+
+.oppvarming ul,
+.sammenligning ul {
+  margin: 4px 0 0;
+  padding-left: 20px;
+}
+
+.oppvarming ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.prikk {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border-radius: 50%;
+}
+
+.oppvarming-Green { background: #1b8a3a; }
+.oppvarming-LightGreen { background: #8fcf5a; }
+.oppvarming-Yellow { background: #f2c200; }
+.oppvarming-Orange { background: #f09a00; }
+.oppvarming-Red { background: #d1281e; }
+
+.sammenligning p {
+  margin: 4px 0;
+}
+
+.sammenligning li {
+  margin: 4px 0;
+}
+
+.forklaring p {
+  margin: 8px 0;
+}
+
+.popup-bygg-link {
+  display: block;
+  margin: 0 20px 18px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #1a73e8;
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}
+
+@media (max-width: 480px) {
+  .bygg-side h1 {
+    font-size: 1.35rem;
+  }
+
+  .soyle-felt {
+    height: 110px;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
+  html,
+  body {
+    height: auto;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* Skjuler kart, sidepanel og knapper */
+  .bygg-verktoy,
+  .app-shell,
+  .maplibregl-map,
+  .maplibregl-popup,
+  button {
+    display: none !important;
+  }
+
+  .bygg-side {
+    min-height: 0;
+    background: #fff;
+    color: #000;
+    font-size: 11pt;
+  }
+
+  .bygg-innhold {
+    max-width: none;
+    padding: 0;
+  }
+
+  .ordning,
+  .forklaring {
+    border: 1px solid #999;
+    box-shadow: none;
+    background: #fff;
+  }
+
+  .advarsel {
+    background: #fff;
+    border: 1px solid #999;
+    border-left: 4px solid #999;
+    color: #000;
+  }
+
+  .soyle-stolpe,
+  .prikk {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .bygg-side h2 {
+    break-after: avoid;
+  }
+}

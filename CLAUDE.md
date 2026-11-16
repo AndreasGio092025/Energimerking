@@ -29,8 +29,12 @@ Bindende fra 2026-11-15 (avgjort av eieren, se `docs/beslutninger.md`).
 - "Lignende bygg" betyr samme bygningskategori og samme byggeårskohort.
 - Kohortene følger byggtekniske forskrifter: før 1949, 1949–1969, 1970–1986, 1987–1996, 1997–2006, 2007–2016, 2017 og senere.
 - Kohortgrensene står ett sted (SQL) og brukes likt i SQL og frontend; ikke lag nye grenser i nettleseren.
-- Bygg uten gyldig byggeår (mangler, 0 eller før 1800) havner ikke i noen kohort og telles ikke som "lignende".
-- Sammenligning vises bare når kohorten har minst **10 enheter**; ellers skriv at det er for få lignende bygg.
+- Bygg uten gyldig byggeår (mangler, 0 eller før 1800) havner ikke i noen kohort og telles ikke som "lignende" på trinn 1.
+- Sammenligning krever minst **10 enheter** i grunnlaget. Grunnlaget velges i to trinn:
+  1. Samme bygningskategori og samme kohort.
+  2. Har trinn 1 under 10 enheter (eller bygget mangler kohort): samme bygningskategori, uansett byggeår.
+  Har heller ikke trinn 2 nok, skriv at det er for få lignende bygg. Si alltid i tekst og API hvilket grunnlag som er brukt.
+- Tall som sammenligner byggets enheter én og én mot lignende bygg (f.eks. andel enheter bedre enn lignende) vises bare for bygg med minst 3 enheter.
 
 ## Språk
 Brukergrensesnitt og tekst til brukere er **norsk (bokmål)**. Kode, variabler og commit-meldinger kan være engelsk eller norsk, men vær konsekvent i hver fil.

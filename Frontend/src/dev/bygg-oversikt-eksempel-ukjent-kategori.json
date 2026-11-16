@@ -1,0 +1,31 @@
+{
+  "bygningsnummer": "80000001",
+  "adresser": ["Eksempelveien 2"],
+  "bygningskategori": null,
+  "byggeaar": null,
+  "kohort": null,
+  "minimum_lignende": 10,
+  "ordninger": [
+    {
+      "ordning": "gammel",
+      "periode": "attester utstedt i 2025",
+      "antall_enheter": 5,
+      "antall_attester": 5,
+      "karakterfordeling": { "A": 0, "B": 0, "C": 1, "D": 2, "E": 2, "F": 0, "G": 0 },
+      "median_kwh_m2": 175.0,
+      "oppvarmingsfordeling": { "Green": 0, "LightGreen": 1, "Yellow": 2, "Orange": 2, "Red": 0 },
+      "lignende": {
+        "grunnlag": null,
+        "antall_enheter": 0,
+        "antall_bygg": 0,
+        "nok_data": false,
+        "karakterfordeling": null,
+        "median_kwh_m2": null,
+        "andel_med_hoyere_energibruk": null,
+        "andel_enheter_bedre_enn_lignende": null,
+        "antall_enheter_bedre_enn_lignende": null,
+        "antall_enheter_med_energitall": null
+      }
+    }
+  ]
+}

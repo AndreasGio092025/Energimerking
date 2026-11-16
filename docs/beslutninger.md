@@ -2,6 +2,17 @@
 
 Kort logg over valg som er viktige eller dyre å endre. Nyeste øverst.
 
+## 2026-11-16: Bygg med én eller to enheter vises med fulle tall
+**Beslutning:** Bygg-oversikten viser karakter, beregnet energibehov og sammenligning også for bygg med én eller to enheter, selv om tallene da i praksis er én boligs.
+**Hvorfor:** Energiattestene er offentlige hos Enova og vises allerede per attest i kartet. Å skjule dem ville gitt de fleste småhus en nesten tom bygg-side. API-et gir fortsatt aldri bruksenhetsnummer, attestnummer eller `enhet_id`.
+
+## 2026-11-16: Reserve-trinn for lignende bygg, og spredning i bygget
+**Beslutning:**
+- Har kategori + kohort under 10 enheter, sammenlignes med hele kategorien uansett byggeår. API-et sier hvilket grunnlag som er brukt (`grunnlag`).
+- Bygg-oversikten viser hvor stor andel av byggets enheter som er bedre enn medianen for lignende bygg, men bare for bygg med minst 3 enheter.
+
+**Hvorfor:** Målt 2026-11-15 (gammel ordning): boligblokker og småhus har nok enheter i 7 av 8 kohorter, men skoler, kulturbygg, idrettsbygg og sykehus har ingen kohort med 10 enheter. Uten reserve ville ikke-boliger nesten aldri fått sammenligning. Byggets median alene skjuler spredning (halve bygget på A og halve på G ser middels ut). Grensen på 3 enheter hindrer at tallet i praksis beskriver én bolig.
+
 ## 2026-11-15: Adresse er med i enhetsnøkkelen
 **Beslutning:** En enhet er bygningsnummer + bruksenhetsnummer + adresse.
 **Hvorfor:** `sql-agent` fant at bruksenhetsnummer (f.eks. H0101) gjentas på hver inngang i samme bygg. Uten adresse ble ulike leiligheter slått sammen: 67 351 enheter i gammel ordning og 11 287 i ny. Med adresse blir det 108 107 og 13 429.
