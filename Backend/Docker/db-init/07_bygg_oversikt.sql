@@ -14,11 +14,10 @@
 -- Personvern: funksjonene gir aldri bruksenhetsnummer, attestnummer eller enhet_id i utdata.
 -- Alle tall er summer, andeler eller medianer over enheter.
 --
--- Etter ny import, oppdater i denne rekkefølgen:
---   REFRESH MATERIALIZED VIEW mv_siste_attest_per_enhet;
---   REFRESH MATERIALIZED VIEW mv_attester_per_bygg;
---   REFRESH MATERIALIZED VIEW mv_lignende_fordeling;
---   REFRESH MATERIALIZED VIEW mv_lignende_enheter;
+-- VIKTIG: kjør   SELECT refresh_bygg_oversikt();   etter HVER import av attester.
+-- Den oppdaterer alle viewene bak bygg-siden i riktig rekkefølge (se del 0b). Glemmes det, viser
+-- bygg-siden tall fra forrige import, og funksjonene gir nok_data = false i stedet for feil tall
+-- hvis viewene ikke lenger henger sammen.
 
 -- ---------------------------------------------------------------------------------------------
 -- 0. Materialiserte views (ytelse)
@@ -105,6 +104,31 @@ ANALYZE mv_lignende_fordeling;
 ANALYZE mv_lignende_enheter;
 
 -- ---------------------------------------------------------------------------------------------
+-- 0b. refresh_bygg_oversikt: oppdater alle views bak bygg-siden i riktig rekkefølge
+-- ---------------------------------------------------------------------------------------------
+-- Rekkefølgen er viktig: de tre andre viewene er bygget på mv_siste_attest_per_enhet, og
+-- mv_lignende_enheter må være i takt med mv_lignende_fordeling (rangene må passe til tellingene).
+-- Returnerer en kort tekst med radantall, så den som kjører den ser at det ble gjort.
+CREATE OR REPLACE FUNCTION refresh_bygg_oversikt()
+RETURNS text
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_ut text := '';
+    v_navn text;
+    v_n bigint;
+BEGIN
+    FOREACH v_navn IN ARRAY ARRAY['mv_siste_attest_per_enhet', 'mv_attester_per_bygg',
+                                  'mv_lignende_fordeling', 'mv_lignende_enheter'] LOOP
+        EXECUTE format('REFRESH MATERIALIZED VIEW %I', v_navn);
+        EXECUTE format('SELECT count(*) FROM %I', v_navn) INTO v_n;
+        v_ut := v_ut || CASE WHEN v_ut = '' THEN '' ELSE ', ' END || v_navn || ': ' || v_n || ' rader';
+    END LOOP;
+    RETURN v_ut;
+END
+$$;
+
+-- ---------------------------------------------------------------------------------------------
 -- 1. bygg_fra_attest: hvilket bygg hører attesten til?
 -- ---------------------------------------------------------------------------------------------
 -- Brukes når noen kommer inn med et attestnummer (f.eks. fra kartpopupen). Vi søker i v_attester
@@ -128,16 +152,19 @@ $$;
 -- ---------------------------------------------------------------------------------------------
 -- Gruppetall fra mv_lignende_fordeling minus byggets egne enheter som hører til gruppen
 -- (samme ordning, kategori og, på kohortnivå, samme kohort pr. enhet). Ingen rader = gruppen finnes ikke.
+-- DROP først: returtypen (kolonnene) kan ikke endres med CREATE OR REPLACE. Funksjonen er vår egen.
+DROP FUNCTION IF EXISTS bygg_lignende_grunnlag(text, text, text, text, text);
 CREATE OR REPLACE FUNCTION bygg_lignende_grunnlag(
     p_bygningsnummer text, p_ordning text, p_kategori text, p_niva text, p_kohort text)
-RETURNS TABLE (n int, n_bygg int, n_kwh int, ant int[])
+RETURNS TABLE (n int, n_bygg int, n_kwh int, ant int[], eier_kwh int)
 LANGUAGE sql
 STABLE
 AS $$
     SELECT g.n - o.n,
            g.n_bygg - (o.n > 0)::int,
            g.n_kwh - o.n_kwh,
-           ARRAY[g.ka - o.ka, g.kb - o.kb, g.kc - o.kc, g.kd - o.kd, g.ke - o.ke, g.kf - o.kf, g.kg - o.kg]
+           ARRAY[g.ka - o.ka, g.kb - o.kb, g.kc - o.kc, g.kd - o.kd, g.ke - o.ke, g.kf - o.kf, g.kg - o.kg],
+           o.n_kwh   -- byggets egne enheter med kWh, til kontroll mot mv_lignende_enheter
     FROM mv_lignende_fordeling g
     CROSS JOIN LATERAL (
         SELECT count(*)::int AS n, count(m.energi_kwh_m2)::int AS n_kwh,
@@ -186,6 +213,7 @@ DECLARE
     v_n         int := 0;
     v_n_bygg    int := 0;
     v_n_kwh     int := 0;
+    v_eier_kwh  int := 0;
     v_ant       int[];
     v_andeler   numeric[];
     v_eier      int[];                   -- byggets egne rang-numre i gruppen, stigende
@@ -201,8 +229,9 @@ DECLARE
     v_siste_le  int;
     v_eier_hoy  int;
     v_bygg_n    int;
-    v_bygg_n_alle int;
     v_bygg_lavere int;
+    v_antall_bedre int;
+    v_antall_energitall int;
     v_bedre     numeric;
     v_sum       numeric;
     v_maks      int := 1;
@@ -213,7 +242,8 @@ BEGIN
         RETURN json_build_object(
             'grunnlag', NULL, 'antall_enheter', 0, 'antall_bygg', 0, 'nok_data', false,
             'karakterfordeling', NULL, 'median_kwh_m2', NULL,
-            'andel_med_hoyere_energibruk', NULL, 'andel_enheter_bedre_enn_lignende', NULL);
+            'andel_med_hoyere_energibruk', NULL, 'andel_enheter_bedre_enn_lignende', NULL,
+            'antall_enheter_bedre_enn_lignende', NULL, 'antall_enheter_med_energitall', NULL);
     END IF;
 
     -- Trinn 1 (kategori + kohort), hvis bygget har kohort og gruppen har nok enheter.
@@ -223,16 +253,29 @@ BEGIN
         IF COALESCE(v_n, 0) >= c_minimum THEN v_niva := 'kohort'; END IF;
     END IF;
     -- Trinn 2 (reserve) ellers.
-    SELECT g.n, g.n_bygg, g.n_kwh, g.ant INTO v_n, v_n_bygg, v_n_kwh, v_ant
+    SELECT g.n, g.n_bygg, g.n_kwh, g.ant, g.eier_kwh INTO v_n, v_n_bygg, v_n_kwh, v_ant, v_eier_kwh
     FROM bygg_lignende_grunnlag(p_bygningsnummer, p_ordning, p_kategori, v_niva, p_kohort) g;
     v_n := COALESCE(v_n, 0); v_n_bygg := COALESCE(v_n_bygg, 0); v_n_kwh := COALESCE(v_n_kwh, 0);
     v_grunnlag := CASE v_niva WHEN 'kohort' THEN 'kategori og byggeår' ELSE 'bare kategori' END;
+
+    -- Vakt 1: negative tall betyr at mv_lignende_fordeling ikke er i takt med
+    -- mv_siste_attest_per_enhet (byggets egne enheter er trukket fra en gruppe de ikke var talt i).
+    -- Da gir vi nok_data = false og ingen tall. Løsning: SELECT refresh_bygg_oversikt();
+    IF v_n < 0 OR v_n_bygg < 0 OR v_n_kwh < 0 OR EXISTS (SELECT 1 FROM unnest(v_ant) a WHERE a < 0) THEN
+        RETURN json_build_object(
+            'grunnlag', v_grunnlag, 'antall_enheter', GREATEST(v_n, 0), 'antall_bygg', GREATEST(v_n_bygg, 0),
+            'nok_data', false,
+            'karakterfordeling', NULL, 'median_kwh_m2', NULL,
+            'andel_med_hoyere_energibruk', NULL, 'andel_enheter_bedre_enn_lignende', NULL,
+            'antall_enheter_bedre_enn_lignende', NULL, 'antall_enheter_med_energitall', NULL);
+    END IF;
 
     IF v_n < c_minimum THEN
         RETURN json_build_object(
             'grunnlag', v_grunnlag, 'antall_enheter', v_n, 'antall_bygg', v_n_bygg, 'nok_data', false,
             'karakterfordeling', NULL, 'median_kwh_m2', NULL,
-            'andel_med_hoyere_energibruk', NULL, 'andel_enheter_bedre_enn_lignende', NULL);
+            'andel_med_hoyere_energibruk', NULL, 'andel_enheter_bedre_enn_lignende', NULL,
+            'antall_enheter_bedre_enn_lignende', NULL, 'antall_enheter_med_energitall', NULL);
     END IF;
 
     -- Karakterfordeling som andeler avrundet til tre desimaler. Avrunding hver for seg kan gi sum
@@ -255,6 +298,17 @@ BEGIN
     FROM mv_lignende_enheter e
     WHERE e.bygningsnummer = p_bygningsnummer AND e.ordning = p_ordning AND e.niva = v_niva
       AND e.kategori = p_kategori AND e.kohort = v_kohortnokkel;
+
+    -- Vakt 1b: byggets egne enheter med kWh i mv_siste_attest_per_enhet skal være like mange som
+    -- byggets rader i mv_lignende_enheter. Er de ikke det, er viewene ute av takt (f.eks. ny
+    -- import uten refresh), og subtraksjonen over gir feil tall uten å bli negativ.
+    IF COALESCE(array_length(v_eier, 1), 0) <> v_eier_kwh THEN
+        RETURN json_build_object(
+            'grunnlag', v_grunnlag, 'antall_enheter', v_n, 'antall_bygg', v_n_bygg, 'nok_data', false,
+            'karakterfordeling', NULL, 'median_kwh_m2', NULL,
+            'andel_med_hoyere_energibruk', NULL, 'andel_enheter_bedre_enn_lignende', NULL,
+            'antall_enheter_bedre_enn_lignende', NULL, 'antall_enheter_med_energitall', NULL);
+    END IF;
 
     v_m := v_n_kwh;   -- allerede uten byggets egne (fordelingstall minus egne)
     IF v_m > 0 THEN
@@ -302,14 +356,28 @@ BEGIN
         v_hoyere := round(((v_n_kwh + COALESCE(array_length(v_eier, 1), 0) - v_siste_le - v_eier_hoy)::numeric) / v_m, 3);
     END IF;
 
+    -- Vakt 2: views ute av takt gir rang som ikke finnes (median mangler selv om gruppen har
+    -- kWh-verdier) eller en andel utenfor 0-1. Da viser vi heller ingen tall enn feil tall.
+    IF (v_m > 0 AND (v_v_lo IS NULL OR v_v_hi IS NULL OR v_median IS NULL))
+       OR v_hoyere < 0 OR v_hoyere > 1 THEN
+        RETURN json_build_object(
+            'grunnlag', v_grunnlag, 'antall_enheter', v_n, 'antall_bygg', v_n_bygg, 'nok_data', false,
+            'karakterfordeling', NULL, 'median_kwh_m2', NULL,
+            'andel_med_hoyere_energibruk', NULL, 'andel_enheter_bedre_enn_lignende', NULL,
+            'antall_enheter_bedre_enn_lignende', NULL, 'antall_enheter_med_energitall', NULL);
+    END IF;
+
     -- Spredning i bygget: andel av byggets egne enheter som bruker mindre enn lignende-medianen.
     -- Bare for bygg med minst 3 enheter i ordningen, så tallet ikke i praksis beskriver én bolig.
-    SELECT count(*), count(m.energi_kwh_m2), count(*) FILTER (WHERE m.energi_kwh_m2 < v_median)
-    INTO v_bygg_n_alle, v_bygg_n, v_bygg_lavere
+    -- Grensen gjelder enheter MED energitall (v_bygg_n), siden det er dem andelen regnes over.
+    SELECT count(m.energi_kwh_m2), count(*) FILTER (WHERE m.energi_kwh_m2 < v_median)
+    INTO v_bygg_n, v_bygg_lavere
     FROM mv_siste_attest_per_enhet m
     WHERE m.ordning = p_ordning AND m.bygningsnummer = p_bygningsnummer;
-    IF v_bygg_n_alle >= c_min_bygg AND v_bygg_n > 0 AND v_median IS NOT NULL THEN
+    IF v_bygg_n >= c_min_bygg AND v_median IS NOT NULL THEN
         v_bedre := round(v_bygg_lavere::numeric / v_bygg_n, 3);
+        v_antall_bedre := v_bygg_lavere;
+        v_antall_energitall := v_bygg_n;
     END IF;
 
     RETURN json_build_object(
@@ -322,7 +390,9 @@ BEGIN
             'E', v_andeler[5], 'F', v_andeler[6], 'G', v_andeler[7]),
         'median_kwh_m2', v_median,
         'andel_med_hoyere_energibruk', v_hoyere,
-        'andel_enheter_bedre_enn_lignende', v_bedre);
+        'andel_enheter_bedre_enn_lignende', v_bedre,
+        'antall_enheter_bedre_enn_lignende', v_antall_bedre,
+        'antall_enheter_med_energitall', v_antall_energitall);
 END
 $$;
 
@@ -427,7 +497,8 @@ BEGIN
         'bygningsnummer', v_bygg,
         'adresser', v_adresser,
         'bygningskategori', v_kat,
-        'byggeaar', v_aar,
+        -- Null når byggeåret er ugyldig (kohort er da null: mangler, 0 eller før 1800).
+        'byggeaar', CASE WHEN v_kohort IS NOT NULL THEN v_aar END,
         'kohort', v_kohort,
         'minimum_lignende', 10,
         'ordninger', v_ordninger);

@@ -8,7 +8,7 @@ Ny fil `07_bygg_oversikt.sql` med `bygg_fra_attest(text)` og `bygg_oversikt_json
 
 ## Hvorfor
 - **Ordningene blandes aldri.** Alt aggregeres per `ordning` (GROUP BY), og "lignende" slås opp i samme ordning. `ordninger` sorteres gammel før ny. `oppvarmingsfordeling` er `null` for ny ordning.
-- **Lignende utelater byggets egne enheter** (`bygningsnummer <>`). Trinn 1 = kategori + kohort, trinn 2 (reserve) = bare kategori hvis trinn 1 har under 10 enheter eller bygget mangler kohort. `nok_data` = antall enheter i grunnlaget som ble brukt >= 10; ellers er alle sammenligningstall `null`.
+- **Lignende utelater byggets egne enheter** (byggets egne enheter trekkes fra gruppetallene, og medianen finnes ved å hoppe over byggets egne rang-numre; se under). Trinn 1 = kategori + kohort, trinn 2 (reserve) = bare kategori hvis trinn 1 har under 10 enheter eller bygget mangler kohort. `nok_data` = antall enheter i grunnlaget som ble brukt >= 10; ellers er alle sammenligningstall `null`.
 - **Byggets kategori og byggeår** hentes fra byggets siste attest (høyeste utstedelsestidspunkt, attestnummer som tie-break). Attestene i et bygg er ofte uenige: kategori ulik i 383 av 18 183 bygg, byggeår i 2 302 (typisk 2 års forskjell, maks 185). Siste attest er nyest og gir ÉN verdi, så bygget får én kohort. Alternativet (flertallsverdi) ble forkastet som mer komplisert uten tydelig gevinst.
 - **Ytelse:** første versjon (alt direkte mot `mv_siste_attest_per_enhet` og `v_attester`) brukte 1-3 s per kall: `v_attester` slår sammen to kilder og kobler mot `enova_raw` ved hvert kall (0,4-1 s), og "lignende" skannet og sorterte opptil 100 000 enheter per ordning. Løsning:
   - `mv_attester_per_bygg`: antall attester per bygg og ordning (21 112 rader).
@@ -17,7 +17,7 @@ Ny fil `07_bygg_oversikt.sql` med `bygg_fra_attest(text)` og `bygg_oversikt_json
   - Alternativet "bare grupperte medianer per gruppe" ble forkastet: en median kan ikke trekkes fra, og å ta med byggets egne enheter bryter regelen.
 - **Andeler** avrundes til tre desimaler. Lignende-karakterfordelingen justeres så den summerer til nøyaktig 1 (avviket, maks 0,003, legges på største andel).
 - **Avrundede medianer brukes i sammenligningene** (`andel_med_hoyere_energibruk`, `andel_enheter_bedre_enn_lignende`), slik at tallene stemmer med det grensesnittet viser.
-- Etter ny import må viewene oppdateres i denne rekkefølgen (står også øverst i filen): `mv_siste_attest_per_enhet`, `mv_attester_per_bygg`, `mv_lignende_fordeling`, `mv_lignende_enheter`. Tid: 0,4 + 0,5 + 3,4 s.
+- Etter ny import kjøres `SELECT refresh_bygg_oversikt();` (står øverst i filen). Den oppdaterer de fire viewene i riktig rekkefølge og returnerer radantall per view. Tid: ca. 8 s.
 
 ## Testet
 Mot lokal Postgres (`energimerke-db`, `Kodehode`/`Energimerking`).
@@ -32,7 +32,7 @@ Mot lokal Postgres (`energimerke-db`, `Kodehode`/`Energimerking`).
   | 80489110 | småhus, 34 enheter | 0,9 ms |
   | 80153902 | sykehjem, 27 enheter (trinn 2) | 0,5 ms |
 
-  Alle langt under målet på 200 ms. Alle 21 112 (bygg, ordning)-par ble beregnet på 9 s totalt (0,4 ms i snitt). `bygg_fra_attest`: ca. 70 ms (søker i `v_attester`, som er det eneste som ikke er forhåndsberegnet; innenfor målet, men kan få eget oppslagsview om det blir tregt i bruk).
+  Alle langt under målet på 200 ms. Alle 21 112 (bygg, ordning)-par ble beregnet på 9 s totalt (0,4 ms i snitt). `bygg_fra_attest`: 21-87 ms per kall på åtte tilfeldige attester med egen tilkobling hver (snitt 87 ms over 20 kall i én løkke; reviewer målte 94-560 ms, trolig kald cache) (søker i `v_attester`, som er det eneste som ikke er forhåndsberegnet; innenfor målet, men kan få eget oppslagsview om det blir tregt i bruk).
 - **Automatisk kontroll mot brute force:** 576 (bygg, ordning)-par (400 tilfeldige bygg, de 25 største, 60 ikke-boliger) ble sammenlignet med en naiv spørring som regner `percentile_cont` direkte på gruppen uten bygget: grunnlag, antall enheter, antall bygg, `nok_data`, begge medianer, `andel_med_hoyere_energibruk` og `andel_enheter_bedre_enn_lignende`. **0 avvik.**
 - **Regelkontroller over alle 21 112 rader:** lignende-karakterfordelingen summerer til 1 i alle (0 avvik); alle sju karakternøkler finnes alltid; `oppvarmingsfordeling` er `null` i alle ny-rader og aldri i gammel (0 avvik); `andel_enheter_bedre_enn_lignende` er `null` når bygget har under 3 enheter, og aldri `null` ellers når `nok_data` er sann (0 avvik); `antall_attester >= antall_enheter` overalt. Ukjent bygningsnummer/attestnummer gir `NULL`.
 
@@ -122,8 +122,23 @@ Feltrekkefølgen er slik den kommer ut av databasen (formatert for lesing):
 - **Materialiserte views må oppdateres** etter hver import (rekkefølge øverst i filen). Glemmes det, gir funksjonene tall fra forrige import. Kobles best til importskriptet; det er utenfor min mappe.
 - **Datakvalitet:** 20 bygg (22 enheter) har ugyldige bygningsnumre som "7" eller "40" (kort, ikke 7-9 siffer). De får samme behandling som andre bygg, men kan slå sammen urelaterte enheter. Bør vurderes filtrert i `v_attester`.
 - **Ukjent kategori** gir `grunnlag` = null og 0 enheter slik kontrakten sier, men ingen bygg i dagens data har det, så grenen er ikke testet mot ekte data.
-- `bygg_fra_attest` bruker `v_attester` direkte (ca. 70 ms). Fint for en enkelt oppslag, men kan trenge eget indeksert oppslag hvis den kalles ofte.
+- `bygg_fra_attest` bruker `v_attester` direkte (21-90 ms, kald cache opptil flere hundre ms). Fint for en enkelt oppslag, men kan trenge eget indeksert oppslag hvis den kalles ofte.
 - Større enn nødvendig? `mv_lignende_enheter` tar 54 MB. Det er billig lokalt, men vurder om det er greit i produksjon.
+
+## Rettet etter reviewer
+Kontrakten fikk to nye felter (commit `4ca5d51`, merget inn i grenen). Kontrakten er ikke endret av meg.
+1. **Nye felter i `lignende`:** `antall_enheter_bedre_enn_lignende` (X) og `antall_enheter_med_energitall` (N). Begge er null i nøyaktig de samme tilfellene som `andel_enheter_bedre_enn_lignende`. Kontroll over alle 21 112 (bygg, ordning)-rader: 5 151 rader har tall, `X = round(andel × N)` i alle (0 avvik), null-mønsteret er likt (0 avvik).
+2. **Grensen på 3 enheter** bruker nå `v_bygg_n >= 3` (enheter MED energitall), ikke alle enheter. Kontroll: ingen rad har N under 3.
+3. **`byggeaar`** er null når byggeåret er ugyldig (kohort er null).
+4. **`refresh_bygg_oversikt()`** oppdaterer de fire viewene i riktig rekkefølge og returnerer radantall (121 536 / 21 112 / 175 / 243 058). Kjørt én gang uten feil, ca. 8 s.
+   **Vakter mot views ute av takt** (`nok_data: false` og null-tall, aldri feil tall):
+   - negativt antall enheter, bygg, kWh-enheter eller karakterantall i grunnlaget;
+   - byggets antall enheter med kWh i `mv_siste_attest_per_enhet` er ulikt antall rader i `mv_lignende_enheter` (fanger det negative-tall-vakten ikke ser: grunnlaget blir feil uten å bli negativt);
+   - rang som ikke finnes (median mangler selv om gruppen har verdier) eller andel utenfor 0-1.
+   Testet i en transaksjon som ble rullet tilbake: 15 nye enheter i ett bygg og `REFRESH` av bare `mv_siste_attest_per_enhet` ga først et stille, plausibelt, men feil grunnlag (509 i stedet for 524 enheter); etter at vakt 1b ble lagt til gir det `nok_data: false`. Databasen er urørt etterpå (121 536 rader, ingen testattester).
+   `bygg_lignende_grunnlag` fikk en ekstra returkolonne og droppes derfor og lages på nytt (egen funksjon).
+
+Kontroll etter rettelsene: filen kjørt to ganger uten feil, `refresh_bygg_oversikt()` kjørt, 0 negative antall over alle 21 112 rader, brute-force mot rådata på 588 par: 0 avvik. Kjøretid `bygg_oversikt_json('80582544')`: 2,6 ms (snitt av 50).
 
 ## Lær dette
 **`percentile_cont` og hvorfor median er bedre enn gjennomsnitt her.**
