@@ -100,7 +100,7 @@ som leser `denorm_matrikkel_og_enova_oslo` (Oslo, attester fra 2025).
 | `energy` | desimaltall | kWh/m² per år | Beregnet levert energi totalt per kvadratmeter. |
 
 ## Enheter i kartet (`api/enheter`)
-Status: til godkjenning (2026-11-17).
+Status: godkjent av eieren 2026-11-17.
 
 Erstatter `GetNearbyDeNormGeoJson` i bydelsvisningen (kart og statistikkpanel). «Enkel bygg» (`/tiles`) og bygg-siden
 er urørt. Ruter i `EnheterController`; begge returnerer rå JSON fra SQL-funksjoner i
