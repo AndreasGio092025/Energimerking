@@ -23,22 +23,35 @@ const tall = (verdi, desimaler = 0) =>
     maximumFractionDigits: desimaler
   });
 
-// Andel 0-1 som hele prosent; ytterpunktene skrives «under 5 %» / «over 95 %».
-function prosent(andel) {
+// Andelen = andel lignende enheter som bruker MER enn bygget (0-1).
+// Under 5 % og over 95 % skrives som «nesten alle».
+function andelSetning(andel) {
   const a = Number(andel);
-  if (a < 0.05) return 'under 5 %';
-  if (a > 0.95) return 'over 95 %';
-  return `${Math.round(a * 100)} %`;
+  if (a < 0.05) {
+    return 'Nesten alle lignende enheter (over 95 %) har lavere beregnet energibehov enn bygget.';
+  }
+  if (a > 0.95) {
+    return 'Bygget har lavere beregnet energibehov enn nesten alle lignende enheter (over 95 %).';
+  }
+  return `Bygget har lavere beregnet energibehov enn ${Math.round(a * 100)} % av lignende enheter.`;
 }
 
-function erEksempel() {
-  return new URLSearchParams(window.location.search).get('eksempel') === '1';
-}
+// Testdata, bare når ?eksempel=1 eller ?eksempel=<navn> står i URL-en.
+const EKSEMPLER = {
+  '1': () => import('../dev/bygg-oversikt-eksempel.json'),
+  standard: () => import('../dev/bygg-oversikt-eksempel.json'),
+  'ukjent-kategori': () => import('../dev/bygg-oversikt-eksempel-ukjent-kategori.json'),
+  under5: () => import('../dev/bygg-oversikt-eksempel-under5.json'),
+  over95: () => import('../dev/bygg-oversikt-eksempel-over95.json'),
+  'en-enhet': () => import('../dev/bygg-oversikt-eksempel-en-enhet.json')
+};
 
 async function hentData(bygningsnummer, signal) {
-  if (erEksempel()) {
-    // Bevisst valgt av brukeren med ?eksempel=1; aldri som stille reserve ved feil.
-    const modul = await import('../dev/bygg-oversikt-eksempel.json');
+  const navn = new URLSearchParams(window.location.search).get('eksempel');
+  if (navn) {
+    // Bevisst valgt av brukeren; aldri som stille reserve ved feil.
+    if (!EKSEMPLER[navn]) throw new Error(`Ukjent eksempel: ${navn}`);
+    const modul = await EKSEMPLER[navn]();
     return modul.default;
   }
   return fetchByggOversikt(bygningsnummer, { signal });
@@ -83,7 +96,7 @@ function Oppvarming({ fordeling }) {
   );
 }
 
-function Sammenligning({ lignende, bygg, enheterIBygget }) {
+function Sammenligning({ lignende, bygg }) {
   const { grunnlag, antall_enheter, antall_bygg, nok_data } = lignende;
   const kategori = bygg.bygningskategori ? `«${bygg.bygningskategori}»` : '';
   const overskrift = <h4>Sammenligning med lignende bygg</h4>;
@@ -121,14 +134,11 @@ function Sammenligning({ lignende, bygg, enheterIBygget }) {
       </p>
       <ul>
         {lignende.andel_med_hoyere_energibruk != null && (
-          <li>
-            Bygget har lavere beregnet energibehov enn {prosent(lignende.andel_med_hoyere_energibruk)} av lignende
-            enheter.
-          </li>
+          <li>{andelSetning(lignende.andel_med_hoyere_energibruk)}</li>
         )}
-        {lignende.andel_enheter_bedre_enn_lignende != null && (
+        {lignende.antall_enheter_bedre_enn_lignende != null && lignende.antall_enheter_med_energitall != null && (
           <li>
-            {Math.round(Number(lignende.andel_enheter_bedre_enn_lignende) * enheterIBygget)} av {tall(enheterIBygget)}{' '}
+            {tall(lignende.antall_enheter_bedre_enn_lignende)} av {tall(lignende.antall_enheter_med_energitall)}{' '}
             enheter i bygget har lavere beregnet energibehov enn vanlig for lignende bygg.
           </li>
         )}
@@ -170,7 +180,7 @@ function OrdningSeksjon({ rad, bygg }) {
 
       {rad.oppvarmingsfordeling && <Oppvarming fordeling={rad.oppvarmingsfordeling} />}
 
-      <Sammenligning lignende={rad.lignende} bygg={bygg} enheterIBygget={rad.antall_enheter} />
+      <Sammenligning lignende={rad.lignende} bygg={bygg} />
     </section>
   );
 }

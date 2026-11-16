@@ -22,7 +22,9 @@
         "karakterfordeling": { "A": 0.01, "B": 0.05, "C": 0.17, "D": 0.34, "E": 0.25, "F": 0.12, "G": 0.06 },
         "median_kwh_m2": 181.2,
         "andel_med_hoyere_energibruk": 0.7,
-        "andel_enheter_bedre_enn_lignende": 0.6
+        "andel_enheter_bedre_enn_lignende": 0.6,
+        "antall_enheter_bedre_enn_lignende": 14,
+        "antall_enheter_med_energitall": 23
       }
     },
     {
@@ -41,7 +43,9 @@
         "karakterfordeling": null,
         "median_kwh_m2": null,
         "andel_med_hoyere_energibruk": null,
-        "andel_enheter_bedre_enn_lignende": null
+        "andel_enheter_bedre_enn_lignende": null,
+        "antall_enheter_bedre_enn_lignende": null,
+        "antall_enheter_med_energitall": null
       }
     }
   ]

@@ -1,0 +1,31 @@
+{
+  "bygningsnummer": "80000004",
+  "adresser": ["Eksempelveien 5"],
+  "bygningskategori": "Småhus",
+  "byggeaar": 1988,
+  "kohort": "1987–1996",
+  "minimum_lignende": 10,
+  "ordninger": [
+    {
+      "ordning": "gammel",
+      "periode": "attester utstedt i 2025",
+      "antall_enheter": 1,
+      "antall_attester": 1,
+      "karakterfordeling": { "A": 0, "B": 0, "C": 0, "D": 1, "E": 0, "F": 0, "G": 0 },
+      "median_kwh_m2": 170.0,
+      "oppvarmingsfordeling": { "Green": 0, "LightGreen": 0, "Yellow": 1, "Orange": 0, "Red": 0 },
+      "lignende": {
+        "grunnlag": "kategori og byggeår",
+        "antall_enheter": 300,
+        "antall_bygg": 280,
+        "nok_data": true,
+        "karakterfordeling": { "A": 0.02, "B": 0.1, "C": 0.25, "D": 0.35, "E": 0.18, "F": 0.07, "G": 0.03 },
+        "median_kwh_m2": 165.0,
+        "andel_med_hoyere_energibruk": 0.45,
+        "andel_enheter_bedre_enn_lignende": null,
+        "antall_enheter_bedre_enn_lignende": null,
+        "antall_enheter_med_energitall": null
+      }
+    }
+  ]
+}

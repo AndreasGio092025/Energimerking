@@ -34,3 +34,14 @@
 - `nok_data: false` sier nå hvilket grunnlag som ble prøvd og hvor mange enheter det hadde. Ukjent kategori (`grunnlag` null) sjekkes først og gir «Bygningskategorien er ukjent, så bygget kan ikke sammenlignes.»
 - Fakta-linjen: «bygget i 1962 (byggeperiode: 1949–1969)». Overskriften viser første adresse og «og N andre innganger», med full liste i en mindre linje under.
 - Ikke testet: tekstvarianten for ukjent kategori (testdata har ingen rad med `grunnlag: null`).
+
+### Andre runde (eierens ønsker)
+- Kontrakten 4ca5d51 er flettet inn. «X av N enheter i bygget» bruker nå `antall_enheter_bedre_enn_lignende` og `antall_enheter_med_energitall` direkte; all utregning i nettleseren er fjernet. Linjen vises bare når begge er satt.
+- Andelssetningen har tre varianter: under 5 % («Nesten alle lignende enheter (over 95 %) har lavere beregnet energibehov enn bygget.»), over 95 % («Bygget har lavere … enn nesten alle lignende enheter (over 95 %).») og ellers «… enn X % av lignende enheter.». Setningen «X av N» har ingen prosent og trenger ingen ytterpunktvariant.
+- Testdata: `?eksempel=<navn>` velger variant (`standard`, `ukjent-kategori`, `under5`, `over95`, `en-enhet`); `?eksempel=1` er det samme som `standard`. Ukjent navn gir «Fant ikke bygget», ikke stille reserve. Filene ligger i `Frontend/src/dev/`.
+- Sjekket i nettleseren (Claudes panel, ren tekstkontroll):
+  - standard / `1`: «1 480 enheter i 62 bygg i kategorien «Boligblokker» fra samme byggeperiode», «enn 70 % av lignende enheter», «14 av 23 enheter i bygget …». Ny ordning: «for få … bare 4 enheter i kategorien «Boligblokker» uansett byggeår».
+  - ukjent-kategori: «Ukjent bygningskategori, ukjent byggeår» og «Bygningskategorien er ukjent, så bygget kan ikke sammenlignes.»
+  - under5: «Nesten alle lignende enheter (over 95 %) har lavere beregnet energibehov enn bygget.» og «0 av 12 enheter …».
+  - over95: «Bygget har lavere beregnet energibehov enn nesten alle lignende enheter (over 95 %).» og «19 av 20 enheter …»; to adresser vises som «Eksempelveien 4A og 1 annen inngang».
+  - en-enhet: bare andelssetningen («45 %») og medianen; ingen «X av N»-linje.
