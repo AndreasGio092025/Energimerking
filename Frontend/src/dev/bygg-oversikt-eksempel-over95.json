@@ -1,0 +1,31 @@
+{
+  "bygningsnummer": "80000003",
+  "adresser": ["Eksempelveien 4A", "Eksempelveien 4B"],
+  "bygningskategori": "Boligblokker",
+  "byggeaar": 2012,
+  "kohort": "2007–2016",
+  "minimum_lignende": 10,
+  "ordninger": [
+    {
+      "ordning": "gammel",
+      "periode": "attester utstedt i 2025",
+      "antall_enheter": 20,
+      "antall_attester": 21,
+      "karakterfordeling": { "A": 1, "B": 8, "C": 8, "D": 3, "E": 0, "F": 0, "G": 0 },
+      "median_kwh_m2": 105.0,
+      "oppvarmingsfordeling": { "Green": 9, "LightGreen": 6, "Yellow": 4, "Orange": 1, "Red": 0 },
+      "lignende": {
+        "grunnlag": "kategori og byggeår",
+        "antall_enheter": 700,
+        "antall_bygg": 30,
+        "nok_data": true,
+        "karakterfordeling": { "A": 0.02, "B": 0.1, "C": 0.3, "D": 0.35, "E": 0.15, "F": 0.06, "G": 0.02 },
+        "median_kwh_m2": 140.0,
+        "andel_med_hoyere_energibruk": 0.98,
+        "andel_enheter_bedre_enn_lignende": 0.95,
+        "antall_enheter_bedre_enn_lignende": 19,
+        "antall_enheter_med_energitall": 20
+      }
+    }
+  ]
+}
