@@ -129,7 +129,7 @@ function App() {
         if (loadError?.name === 'AbortError') return;
         setAllFeatures([]);
         initializeFilters(buildInitialFilterBounds([]));
-        setError(extractErrorMessage(loadError, 'Failed to load building data.'));
+        setError(extractErrorMessage(loadError, 'Kunne ikke laste byggdata.'));
       } finally {
         if (active) setLoading(false);
       }
@@ -223,7 +223,7 @@ function App() {
         results
       });
     } catch (nearbyError) {
-      setError(extractErrorMessage(nearbyError, 'Failed to search nearby buildings.'));
+      setError(extractErrorMessage(nearbyError, 'Kunne ikke søke etter bygg i nærheten.'));
     } finally {
       setIsSearchingNearby(false);
     }
@@ -231,11 +231,11 @@ function App() {
 
   const isEmpty = !isLoading && !error && filteredFeatures.length === 0;
   const emptyTitle = allFeatures.length === 0
-    ? 'No backend data loaded'
-    : 'No buildings match these filters';
+    ? 'Ingen data er lastet fra backend'
+    : 'Ingen bygg passer med filtrene';
   const emptyCopy = allFeatures.length === 0
-    ? 'Try the Swagger defaults: latitude 59.9, longitude 10.8, radius 2500.'
-    : 'Adjust the ranges or grade filters to bring results back.';
+    ? 'Prøv standardverdiene i Swagger: breddegrad 59,9, lengdegrad 10,8, radius 2500.'
+    : 'Juster områdene eller karakterfiltrene for å få treff igjen.';
 
   return (
     <div className={`app-shell ${theme === 'dark' ? 'theme-dark' : ''}`}>
@@ -267,15 +267,15 @@ function App() {
                 <div className="status-card" role="status" aria-live="polite">
                   <div className="spinner" aria-hidden="true" />
                   <div>
-                    <div className="status-title">Loading building data</div>
-                    <div className="status-copy">Preparing map, layers, and filters.</div>
+                    <div className="status-title">Laster byggdata</div>
+                    <div className="status-copy">Gjør klar kart, lag og filtre.</div>
                   </div>
                 </div>
               </div>
             )}
           {error && !isLoading && (
               <div className="toast toast-error" role="alert">
-                <div className="toast-title">Something went wrong</div>
+                <div className="toast-title">Noe gikk galt</div>
                 <div className="toast-copy">{error}</div>
               </div>
             )}

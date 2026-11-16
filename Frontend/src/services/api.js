@@ -23,7 +23,7 @@ async function getJson(path, params, options = {}) {
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(message || `Request failed with status ${response.status}`);
+    throw new Error(message || `Forespørselen feilet med status ${response.status}`);
   }
 
   const payload = await response.json();
@@ -89,7 +89,7 @@ async function getByggJson(path, options = {}) {
     headers: { Accept: 'application/json' }
   });
   if (!response.ok) {
-    const error = new Error(`Request failed with status ${response.status}`);
+    const error = new Error(`Forespørselen feilet med status ${response.status}`);
     error.status = response.status;
     throw error;
   }

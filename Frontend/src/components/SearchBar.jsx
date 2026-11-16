@@ -27,7 +27,7 @@ function SearchBar({
     [
       feature.properties.poststed,
       feature.properties.kommunenavn
-    ].filter(Boolean).join(' | ') || 'Location not registered'
+    ].filter(Boolean).join(' | ') || 'Sted ikke registrert'
   );
   const selectSuggestion = (feature) => {
     onSuggestionSelect(feature);
@@ -42,7 +42,7 @@ function SearchBar({
             <Search className="search-input-icon" aria-hidden="true" strokeWidth={2.2} />
             <input
               type="text"
-              aria-label="Search buildings"
+              aria-label="Søk etter bygg"
               value={searchQuery}
               disabled={!hasData}
               onChange={(event) => {
@@ -60,10 +60,10 @@ function SearchBar({
                   selectSuggestion(visibleSuggestions[0]);
                 }
               }}
-              placeholder={hasData ? 'Search by adresse, poststed, or kommunenavn' : 'No building data loaded'}
+              placeholder={hasData ? 'Søk på adresse, poststed eller kommunenavn' : 'Ingen byggdata er lastet inn'}
             />
             {searchQuery && (
-              <button type="button" className="inline-ghost search-clear-button" aria-label="Clear search" onClick={() => {
+              <button type="button" className="inline-ghost search-clear-button" aria-label="Tøm søket" onClick={() => {
                 setSearchQuery('');
                 setOpen(false);
               }}>
@@ -73,21 +73,21 @@ function SearchBar({
           </div>
 
           {open && searchQuery.trim() && (
-              <div className="suggestions-panel" role="listbox" aria-label="Search suggestions">
+              <div className="suggestions-panel" role="listbox" aria-label="Søkeforslag">
                 {visibleSuggestions.length > 0 ? (
                   visibleSuggestions.map((feature) => (
                     <button key={feature.id} type="button" className="suggestion-item" role="option" onClick={() => selectSuggestion(feature)}>
                       <span className="suggestion-dot" />
                       <span className="suggestion-copy">
-                        <strong>{feature.properties.adresse || 'Unknown address'}</strong>
+                        <strong>{feature.properties.adresse || 'Ukjent adresse'}</strong>
                         <small>{suggestionLocation(feature)}</small>
                       </span>
                     </button>
                   ))
                 ) : hasData ? (
-                  <div className="suggestions-empty">No matching buildings found.</div>
+                  <div className="suggestions-empty">Fant ingen bygg som passer.</div>
                 ) : (
-                  <div className="suggestions-empty">No building data is available to search.</div>
+                  <div className="suggestions-empty">Ingen byggdata er tilgjengelig å søke i.</div>
                 )}
               </div>
             )}
