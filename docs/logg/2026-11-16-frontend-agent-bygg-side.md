@@ -1,0 +1,28 @@
+# Frontend: bygg-siden
+
+**Hva:** Ny bygg-side (`#/bygg/{bygningsnummer}`) med én seksjon per ordning, søylediagram over karakterfordeling, oppvarmingskarakter, sammenligning med lignende bygg, forklaring og utskriftsknapp. Kartpopupen har fått lenken «Vis bygget». Hash-ruting i ny `Router.jsx`.
+
+**Hvorfor:**
+- Hash-ruting uten ruter-pakke, som avtalt. `#/` (tom hash) viser kartet som før. Kartet laster inn på nytt når man går tilbake (komponenten fjernes mens bygg-siden vises); alternativet, å holde kartet skjult, kan ødelegge kartstørrelsen.
+- Popupen viser ikke bygningsnummer, men har attestnummer. Lenken går derfor til `#/bygg-fra-attest/{attestnummer}`. Den siden kaller `fra-attest` og bytter deretter hashen til `#/bygg/{bygningsnummer}` (`location.replace`, så tilbake-knappen ikke havner i en blindvei).
+- Testdata (`src/dev/bygg-oversikt-eksempel.json`) brukes bare med `?eksempel=1`, aldri som stille reserve ved feil. Ved feil/404 vises «Fant ikke bygget».
+- Alle tall kommer ferdig fra API-et. Nettleseren gjør bare formatering: «0,7» blir «7 av 10», og søylehøyde skaleres mot største søyle.
+- Søylediagrammet er ren CSS (ingen nye pakker). Antall står over hver søyle, så det er lesbart i svart-hvitt-utskrift.
+- Utskrift: `@media print` skjuler verktøylinje, kart, popup og knapper, setter A4 med 15 mm marg og tvinger søylefargene til å skrives ut.
+
+**Testet:**
+- `npx vite build --outDir <midlertidig mappe>`: OK (kun den vanlige advarselen om stor pakke). `Frontend/dist` er urørt.
+- `npm run dev` + `?eksempel=1#/bygg/80000000`: PC-bredde og 375 px sjekket med skjermbilde (testdata). Ingen horisontal rulling på 375 px (scrollWidth = 375). Begge ordninger vises, `nok_data: false` gir «for få lignende bygg», oppvarmingskarakter vises bare for gammel ordning.
+- Uten `?eksempel=1` og uten backend: «Fant ikke bygget» med lenke tilbake. `#/` viser kartet igjen.
+- Ikke tatt med Playwright (ikke installert); brukte Claudes nettleserpanel.
+
+**Usikkert:**
+- Siden er ikke testet mot ekte API. Feltnavn og typer er bare lest fra `docs/api-kontrakt.md`.
+- Lenken «Vis bygget» i popupen og `fra-attest`-oppslaget er ikke klikket gjennom i nettleseren (popupen krever kartdata fra backend). Det er bare kodet og bygget.
+- Utskriftsforhåndsvisning er ikke sett visuelt (panelet kan ikke åpne den). `@media print`-reglene er skrevet, men bør sjekkes med Ctrl+P.
+- Forklaringen av oppvarmingskarakter («hvor miljøvennlig oppvarmingen er») er min forenkling; kontrakten sier bare at den har fargene Green til Red. Eieren bør godkjenne ordlyden. Det samme gjelder «A er best, G er dårligst» for ny ordning.
+- Hvis `lignende.grunnlag` er «bare kategori», skrives kategorien med små bokstaver («i alle boligblokker»). Kategorinavn i entall eller andre former kan gi stiv norsk.
+- Popupen i `MapView.jsx` er ellers på engelsk (utenfor oppgaven; bare lenken er norsk). `oversetter` bør ta resten.
+- Median for lignende bygg vises i tillegg til det oppgaven ba om (`lignende.median_kwh_m2` finnes i kontrakten).
+
+**Lær dette:** *Hash-ruting* bruker delen av URL-en etter `#`. Nettleseren laster ikke siden på nytt når den endres, og `hashchange`-hendelsen lar appen bytte visning uten ruter-pakke eller serveroppsett. *`@media print`* er CSS som bare gjelder ved utskrift/PDF. Her skjuler den alt som ikke hører hjemme på papiret og setter sidestørrelsen med `@page`.

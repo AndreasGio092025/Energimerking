@@ -81,3 +81,25 @@ export async function fetchNearbyBuildingsGeoJson({
 export async function fetchBydelStats(bydelId) {
   return getJson(`/bydel-stats/${encodeURIComponent(bydelId)}`);
 }
+
+// Bygg-oversikt. Kaster Error med `status` (f.eks. 404) hvis bygget ikke finnes.
+async function getByggJson(path, options = {}) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    signal: options.signal,
+    headers: { Accept: 'application/json' }
+  });
+  if (!response.ok) {
+    const error = new Error(`Request failed with status ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
+  return response.json();
+}
+
+export function fetchByggOversikt(bygningsnummer, options = {}) {
+  return getByggJson(`/bygg-oversikt/${encodeURIComponent(bygningsnummer)}`, options);
+}
+
+export function fetchByggFraAttest(attestnummer, options = {}) {
+  return getByggJson(`/bygg-oversikt/fra-attest/${encodeURIComponent(attestnummer)}`, options);
+}

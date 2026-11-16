@@ -199,6 +199,11 @@ function popupHtml(properties) {
           ${markerPopupDetail("Material", properties.materialvalg, POPUP_HELP.material)}
         </div>
       </div>
+      ${
+        hasValue(properties.attestnummer)
+          ? `<a class="popup-bygg-link" href="#/bygg-fra-attest/${encodeURIComponent(properties.attestnummer)}">Vis bygget</a>`
+          : ""
+      }
     </article>
   `;
 }
