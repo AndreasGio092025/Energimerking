@@ -24,6 +24,7 @@ import {
   SOURCE_IDS,
   heatingGradeName,
 } from "../utils/constants.js";
+import { ordningLabel } from "../utils/enheter.js";
 import "../styles/map-view.css";
 
 function escapeHtml(value) {
@@ -340,10 +341,66 @@ function upgradePopupHtml(properties) {
   `;
 }
 
+// Popup for ett punkt i bydelsvisningen (én enhet, siste attest i valgt ordning).
+function enhetPopupHtml(properties) {
+  const address = escapeHtml(displayValue(properties.adresse, "Ukjent adresse"));
+  const energyGrade = displayValue(properties.energikarakter, "Mangler");
+  const energyGradeClass = energyClass(energyGrade);
+  const energy = Number(properties.energi_kwh_m2);
+  const energyText =
+    properties.energi_kwh_m2 !== null && Number.isFinite(energy)
+      ? `${energy.toLocaleString("nb-NO", { maximumFractionDigits: 1 })} kWh/m² per år`
+      : null;
+  const ordning = properties.ordning === "ny" ? "Ny ordning (fra 2026)" : "Gammel ordning (2025)";
+  const samme = Number(properties.antall_enheter_samme_punkt);
+  const heating =
+    hasValue(properties.oppvarmingskarakter)
+      ? heatingGradeName(properties.oppvarmingskarakter)
+      : "";
+
+  return `
+    <article class="popup-card marker-popup">
+      <div class="marker-popup-header">
+        <div class="marker-popup-heading">
+          <div class="marker-popup-meta">
+            <span class="marker-popup-kicker">Siste energiattest for enheten</span>
+          </div>
+          <h2 class="marker-popup-title">${address}</h2>
+        </div>
+        <div class="marker-popup-grade ${energyGradeClass}">
+          <span>Energikarakter</span>
+          <strong>${escapeHtml(energyGrade)}</strong>
+        </div>
+      </div>
+      ${samme > 1 ? `<div class="marker-popup-same-point">${samme} enheter her</div>` : ""}
+      <div class="marker-popup-snapshot" aria-label="Oppsummering av enheten">
+        ${markerPopupMetric("Beregnet levert energi", energyText, POPUP_HELP.energyUse)}
+        ${markerPopupMetric("Byggeår", properties.byggeaar, POPUP_HELP.built)}
+      </div>
+      <div class="marker-popup-body">
+        <div class="marker-popup-section-title">Detaljer</div>
+        <div class="marker-popup-detail-list">
+          ${markerPopupDetail("Ordning", ordning)}
+          ${markerPopupDetail("Bygningskategori", properties.bygningskategori)}
+          ${markerPopupDetail("Byggeårsgruppe", properties.kohort)}
+          ${markerPopupDetail("Attesten utstedt", properties.utstedelsesdato, POPUP_HELP.issued)}
+          ${markerPopupDetail("Oppvarming", heating, POPUP_HELP.heatingGrade)}
+          ${markerPopupDetail("Bygningsnummer", properties.bygningsnummer)}
+        </div>
+      </div>
+      ${
+        hasValue(properties.bygningsnummer)
+          ? `<a class="popup-bygg-link" href="#/bygg/${encodeURIComponent(properties.bygningsnummer)}">Vis bygget</a>`
+          : ""
+      }
+    </article>
+  `;
+}
+
 function popupHtmlForMode(properties, mode) {
   return mode === "upgrade"
     ? upgradePopupHtml(properties)
-    : popupHtml(properties);
+    : enhetPopupHtml(properties);
 }
 
 // Vektor-tilene bruker egne feltnavn (energy, attestNr). Popupen leser
@@ -1509,6 +1566,8 @@ function MapView({
   const nearbySearchEnabled = useStore((state) => state.nearbySearchEnabled);
   const radiusInMeters = useStore((state) => state.radiusInMeters);
   const setSelectedFeature = useStore((state) => state.setSelectedFeature);
+  const ordning = useStore((state) => state.ordning);
+  const punktInfo = useStore((state) => state.punktInfo);
   const [zoomLevel, setZoomLevel] = useState(DEFAULT_ZOOM);
   const featureCollection = useMemo(
     () => buildFeatureCollection(features),
@@ -1653,16 +1712,21 @@ function MapView({
 
     map.on("load", () => {
       addMapLayers(map);
-      syncMapDataAndVisibility(map, {
-        featureCollection: featureCollectionRef.current,
-        heatmapCollection: heatmapCollectionRef.current,
-        heatmapStats: heatmapStatsRef.current,
-        nearbyCollection: nearbyCollectionRef.current,
-        nearbyCircleCollection: nearbyCircleCollectionRef.current,
-        selectedFeature: selectedFeatureRef.current,
-        viewMode: viewModeRef.current,
-        bydelDisplayMode: bydelDisplayModeRef.current,
-      });
+      const syncInitialData = () =>
+        syncMapDataAndVisibility(map, {
+          featureCollection: featureCollectionRef.current,
+          heatmapCollection: heatmapCollectionRef.current,
+          heatmapStats: heatmapStatsRef.current,
+          nearbyCollection: nearbyCollectionRef.current,
+          nearbyCircleCollection: nearbyCircleCollectionRef.current,
+          selectedFeature: selectedFeatureRef.current,
+          viewMode: viewModeRef.current,
+          bydelDisplayMode: bydelDisplayModeRef.current,
+        });
+      syncInitialData();
+      // Stilen regnes ikke som ferdig lastet rett etter at lagene er lagt til.
+      // Er dataene allerede hentet (f.eks. fra hurtigbufferen), må de settes inn igjen når kartet er i ro.
+      map.once("idle", syncInitialData);
       ensureTilesMinZoom(map);
 
       map.on("click", LAYER_IDS.clusters, (event) => {
@@ -1957,7 +2021,7 @@ function MapView({
             map,
             feature.geometry.coordinates.slice(),
             selected
-              ? popupHtml(selected.properties)
+              ? enhetPopupHtml(selected.properties)
               : nearbyPopupHtml(feature.properties),
           );
         }
@@ -2140,7 +2204,7 @@ function MapView({
             address,
             coordinates,
           )
-        : popupHtml(searchedFeature.properties),
+        : enhetPopupHtml(searchedFeature.properties),
     );
   }, [searchSelection]);
 
@@ -2213,6 +2277,17 @@ function MapView({
         {viewMode === "tiles" && zoomLevel < MIN_TILE_ZOOM && (
           <div className="map-pill is-hint">
             Zoom inn for å se byggene
+          </div>
+        )}
+        {(viewMode === "markers" || viewMode === "upgrade") && (
+          <div className="map-pill">
+            Viser {ordningLabel(viewMode === "upgrade" ? "gammel" : ordning)}
+          </div>
+        )}
+        {viewMode !== "tiles" && punktInfo.avkortet && (
+          <div className="map-pill is-hint" role="status">
+            Kartet viser bare de første {punktInfo.antall.toLocaleString("nb-NO")}{" "}
+            enhetene i området. Det finnes flere.
           </div>
         )}
         {nearbySearchEnabled && (

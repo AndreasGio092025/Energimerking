@@ -1658,3 +1658,12 @@
     padding: 0 24px 20px;
   }
 }
+
+.ordning-kicker {
+  margin-top: 10px;
+  margin-bottom: 6px;
+}
+
+.bydel-panel .bydel-stat-note {
+  margin-top: 8px;
+}

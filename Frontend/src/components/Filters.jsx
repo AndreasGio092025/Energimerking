@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Database, Flame, Landmark, Layers, MapPin, PlugZap, TrendingUp } from 'lucide-react';
-import { fetchBydelStats } from '../services/api.js';
+import { fetchBydelStats, fetchEnhetStatistikk } from '../services/api.js';
 import { useStore } from '../store/useStore.js';
 import { BYDEL_DISPLAY_MODES, MAP_VIEW_MODES, heatingGradeName } from '../utils/constants.js';
 import { OSLO_BYDELER, findBydel } from '../utils/osloBydeler.js';
+import { ORDNINGER, ordningLabel } from '../utils/enheter.js';
 
 function RangeField({ label, min, max, value, onChange, suffix = '', step = 1, tooltip = '' }) {
   const [draftValue, setDraftValue] = useState(value);
@@ -137,6 +138,7 @@ const ENERGY_GRADE_MEANINGS = {
 
 const HEATING_GRADE_MEANINGS = {
   GREEN: 'svært høy andel fornybar/ikke-elektrisk oppvarming',
+  LIGHTGREEN: 'høy andel fornybar oppvarming',
   YELLOW: 'moderat andel fornybar oppvarming',
   ORANGE: 'hovedsakelig elektrisk oppvarming',
   RED: 'direkte elektrisk eller fossil oppvarming'
@@ -144,6 +146,7 @@ const HEATING_GRADE_MEANINGS = {
 
 const HEATING_GRADE_ORDER = {
   GREEN: 0,
+  LIGHTGREEN: 0.5,
   YELLOW: 1,
   ORANGE: 2,
   RED: 3
@@ -196,112 +199,20 @@ function formatRadius(radiusInMeters) {
     : `${radiusInMeters} m`;
 }
 
-function percentage(count, total) {
-  return total > 0 ? Math.round((count / total) * 100) : 0;
-}
-
-function countBy(values, allowedValues) {
-  const counts = Object.fromEntries(allowedValues.map((value) => [value, 0]));
-
-  values.forEach((value) => {
-    if (value in counts) {
-      counts[value] += 1;
-    }
-  });
-
-  return counts;
-}
-
-function mostCommon(values, fallback = 'Mangler') {
-  const counts = new Map();
-
-  values.filter(Boolean).forEach((value) => {
-    counts.set(value, (counts.get(value) || 0) + 1);
-  });
-
-  return Array.from(counts.entries())
-    .sort((left, right) => right[1] - left[1] || String(left[0]).localeCompare(String(right[0])))[0]?.[0] || fallback;
-}
-
-function median(values) {
-  if (values.length === 0) return null;
-
-  const sorted = [...values].sort((left, right) => left - right);
-  const middle = Math.floor(sorted.length / 2);
-
-  return sorted.length % 2 === 0
-    ? Math.round((sorted[middle - 1] + sorted[middle]) / 2)
-    : Math.round(sorted[middle]);
-}
-
-function buildBydelStats(features) {
-  const total = features.length;
-  const energyValues = [];
-  const buildYears = [];
-  const energyGrades = [];
-  const heatingGrades = [];
-  let oldBuildingCount = 0;
-  let highUpgradeCount = 0;
-
-  features.forEach((feature) => {
-    const props = feature.properties || {};
-    const energyGrade = String(props.energikarakter || '').trim().toUpperCase();
-    const heatingGrade = normalizeHeatingGrade(props.oppvarmingskarakter);
-    const energy = Number(props.energibruk_kwh_m2);
-    const buildYear = Number(props.byggeaar);
-    const upgradeScore = Number(props.upgradeScore);
-
-    if (energyGrade) {
-      energyGrades.push(energyGrade);
-    }
-
-    if (heatingGrade) {
-      heatingGrades.push(heatingGrade);
-    }
-
-    if (Number.isFinite(energy) && energy > 0) {
-      energyValues.push(energy);
-    }
-
-    if (Number.isFinite(buildYear) && buildYear > 0) {
-      buildYears.push(buildYear);
-      if (buildYear < 1980) oldBuildingCount += 1;
-    }
-
-    if (Number.isFinite(upgradeScore) && upgradeScore >= 75) {
-      highUpgradeCount += 1;
-    }
-  });
-
-  const averageEnergy = energyValues.length
-    ? Math.round(energyValues.reduce((sum, value) => sum + value, 0) / energyValues.length)
-    : null;
-  const averageBuildYear = buildYears.length
-    ? Math.round(buildYears.reduce((sum, value) => sum + value, 0) / buildYears.length)
-    : null;
-  const energyGradeCounts = countBy(energyGrades, ['A', 'B', 'C', 'D', 'E', 'F', 'G']);
-  const heatingGradeCounts = countBy(heatingGrades, ['GREEN', 'YELLOW', 'ORANGE', 'RED']);
-
-  return {
-    total,
-    averageEnergy,
-    medianEnergy: median(energyValues),
-    mostCommonEnergyGrade: mostCommon(energyGrades),
-    mostCommonHeatingGrade: mostCommon(heatingGrades),
-    energyGradeCounts,
-    heatingGradeCounts,
-    averageBuildYear,
-    oldBuildingShare: percentage(oldBuildingCount, total),
-    highUpgradeShare: percentage(highUpgradeCount, total)
-  };
-}
-
 function formatEnergy(value) {
-  return value ? `${value} kWh/m² per år` : 'Mangler';
+  return Number.isFinite(Number(value)) && value !== null
+    ? `${Number(value).toLocaleString('nb-NO', { maximumFractionDigits: 1 })} kWh/m² per år`
+    : 'Mangler';
+}
+
+function formatCount(value, unit) {
+  return Number.isFinite(Number(value)) && value !== null
+    ? `${Number(value).toLocaleString('nb-NO')} ${unit}`
+    : 'Mangler';
 }
 
 function formatNumber(value) {
-  return Number.isFinite(Number(value)) ? Math.round(Number(value)).toLocaleString() : 'Mangler';
+  return Number.isFinite(Number(value)) ? Math.round(Number(value)).toLocaleString('nb-NO') : 'Mangler';
 }
 
 function formatCurrency(value) {
@@ -310,10 +221,6 @@ function formatCurrency(value) {
 
 function formatPercent(value) {
   return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)}%` : 'Mangler';
-}
-
-function formatCountShare(count, total) {
-  return `${percentage(count, total)}% (${count.toLocaleString()})`;
 }
 
 function BydelStatSection({ Icon, children, status = '' }) {
@@ -335,30 +242,68 @@ function BydelStat({ label, value }) {
   );
 }
 
-function BydelStatsPanel({ bydelStats, externalBydelStats, externalBydelStatus }) {
+function formatKm(meter) {
+  const km = meter / 1000;
+  return `${km.toLocaleString('nb-NO', { maximumFractionDigits: 1 })} km`;
+}
+
+function OmradeStatistikk({ rad, omrade, bydelNavn, status }) {
+  if (status === 'loading') {
+    return <div className="bydel-stat-note">Henter tall for området …</div>;
+  }
+  if (status === 'error') {
+    return <div className="bydel-stat-note">Statistikken kunne ikke hentes akkurat nå.</div>;
+  }
+  if (!rad) {
+    return <div className="bydel-stat-note">Ingen statistikk for valgt ordning.</div>;
+  }
+
+  const heatingEntries = rad.oppvarmingsfordeling
+    ? Object.entries(rad.oppvarmingsfordeling).sort(([left], [right]) => compareHeatingGrades(left, right))
+    : null;
+
   return (
-    <div className="bydel-stats-grid">
-      <BydelStatSection Icon={Database}>Statistikk for innlastede enheter</BydelStatSection>
-      <div className="bydel-stat-note">Hver enhet telles én gang, med siste attest. Tallene gjelder bare det som er lastet inn i kartet, ikke hele bydelen.</div>
-      <BydelStat label="Antall enheter" value={bydelStats.total.toLocaleString()} />
-      <BydelStat label="Gjennomsnittlig beregnet levert energi" value={formatEnergy(bydelStats.averageEnergy)} />
-      <BydelStat label="Typisk beregnet levert energi (median)" value={formatEnergy(bydelStats.medianEnergy)} />
-      <BydelStat label="Vanligste energikarakter" value={bydelStats.mostCommonEnergyGrade} />
-      <BydelStat label="Vanligste oppvarmingskarakter" value={bydelStats.mostCommonHeatingGrade ? heatingGradeName(bydelStats.mostCommonHeatingGrade) : 'Mangler'} />
-      <BydelStat label="Gjennomsnittlig byggeår" value={bydelStats.averageBuildYear || 'Mangler'} />
-      <BydelStat label="Før 1980" value={`${bydelStats.oldBuildingShare}%`} />
-      <BydelStat label="Høy oppgraderingsprioritet" value={`${bydelStats.highUpgradeShare}%`} />
-      {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((grade) => (
+    <>
+      <div className="bydel-stat-note">
+        Tallene gjelder alle enheter i en sirkel innenfor {formatKm(omrade.radius_m)} fra midten av {bydelNavn}.
+        Sirkelen følger ikke bydelsgrensen. {rad.periode ? `Grunnlag: ${rad.periode}.` : ''}
+      </div>
+      <div className="bydel-stat-note">Filtrene lenger ned påvirker ikke disse tallene, bare punktene i kartet.</div>
+      {rad.enheter_uten_kartpunkt > 0 && (
+        <div className="bydel-stat-note">
+          {rad.enheter_uten_kartpunkt.toLocaleString('nb-NO')} enheter i ordningen har ikke kartpunkt og er ikke med.
+        </div>
+      )}
+      <BydelStat label="Antall enheter" value={formatCount(rad.antall_enheter, 'enheter')} />
+      <BydelStat label="Antall attester" value={formatCount(rad.antall_attester, 'attester')} />
+      <BydelStat label="Antall bygg" value={formatCount(rad.antall_bygg, 'bygg')} />
+      <BydelStat label="Typisk beregnet levert energi (median)" value={formatEnergy(rad.median_kwh_m2)} />
+      <BydelStat label="Gjennomsnittlig beregnet levert energi" value={formatEnergy(rad.gjennomsnitt_kwh_m2)} />
+      <BydelStat label="Gjennomsnittlig byggeår" value={rad.gjennomsnitt_byggeaar ?? 'Mangler'} />
+      {Object.entries(rad.karakterfordeling || {}).map(([grade, count]) => (
+        <BydelStat key={grade} label={`Energikarakter ${grade}`} value={formatCount(count, 'enheter')} />
+      ))}
+      {heatingEntries && heatingEntries.map(([grade, count]) => (
+        <BydelStat key={grade} label={`Oppvarming ${heatingGradeName(grade)}`} value={formatCount(count, 'enheter')} />
+      ))}
+      {Object.entries(rad.kohortfordeling || {}).sort(([left], [right]) => (left === "ukjent") - (right === "ukjent")).map(([kohort, count]) => (
         <BydelStat
-          key={grade}
-          label={`Energikarakter ${grade}`}
-          value={formatCountShare(bydelStats.energyGradeCounts[grade], bydelStats.total)}
+          key={kohort}
+          label={kohort === 'ukjent' ? 'Byggeår ukjent' : `Bygget ${kohort}`}
+          value={formatCount(count, 'enheter')}
         />
       ))}
-      <BydelStat label="Oppvarming grønn" value={formatCountShare(bydelStats.heatingGradeCounts.GREEN, bydelStats.total)} />
-      <BydelStat label="Oppvarming gul" value={formatCountShare(bydelStats.heatingGradeCounts.YELLOW, bydelStats.total)} />
-      <BydelStat label="Oppvarming oransje" value={formatCountShare(bydelStats.heatingGradeCounts.ORANGE, bydelStats.total)} />
-      <BydelStat label="Oppvarming rød" value={formatCountShare(bydelStats.heatingGradeCounts.RED, bydelStats.total)} />
+    </>
+  );
+}
+
+function BydelStatsPanel({ omradeStats, omradeStatus, ordning, bydelNavn, externalBydelStats, externalBydelStatus }) {
+  const rad = omradeStats?.ordninger?.find((item) => item.ordning === ordning) || null;
+
+  return (
+    <div className="bydel-stats-grid">
+      <BydelStatSection Icon={Database}>Statistikk for {ordningLabel(ordning).toLowerCase()}</BydelStatSection>
+      <OmradeStatistikk rad={rad} omrade={omradeStats?.omrade} bydelNavn={bydelNavn} status={omradeStatus} />
 
       <BydelStatSection
         Icon={Landmark}
@@ -405,7 +350,11 @@ function Filters() {
     ? `${(radiusInMeters / 1000).toFixed(radiusInMeters % 1000 === 0 ? 0 : 1)} km`
     : `${radiusInMeters} m`;
   const selectedBydel = findBydel(selectedBydelId);
-  const bydelStats = useMemo(() => buildBydelStats(allFeatures), [allFeatures]);
+  const ordning = useStore((state) => state.ordning);
+  const setOrdning = useStore((state) => state.setOrdning);
+  const [omradeStats, setOmradeStats] = useState(null);
+  const [omradeStatus, setOmradeStatus] = useState('idle');
+  const omradeStatsCache = useRef(new Map());
   const [externalBydelStats, setExternalBydelStats] = useState(null);
   const [externalBydelStatus, setExternalBydelStatus] = useState('idle');
   const [statsOpen, setStatsOpen] = useState(false);
@@ -443,6 +392,43 @@ function Filters() {
     };
   }, [selectedBydelId]);
 
+  useEffect(() => {
+    let isActive = true;
+    const cacheKey = selectedBydelId;
+
+    if (omradeStatsCache.current.has(cacheKey)) {
+      setOmradeStats(omradeStatsCache.current.get(cacheKey));
+      setOmradeStatus('ready');
+      return () => {
+        isActive = false;
+      };
+    }
+
+    const bydel = findBydel(selectedBydelId);
+    setOmradeStatus('loading');
+    setOmradeStats(null);
+
+    fetchEnhetStatistikk({
+      latitude: bydel.latitude,
+      longitude: bydel.longitude,
+      radiusInMeters: bydel.radiusInMeters
+    })
+      .then((payload) => {
+        if (!isActive) return;
+        omradeStatsCache.current.set(cacheKey, payload);
+        setOmradeStats(payload);
+        setOmradeStatus('ready');
+      })
+      .catch(() => {
+        if (!isActive) return;
+        setOmradeStatus('error');
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [selectedBydelId]);
+
   const energyGrades = useMemo(() => {
     const values = new Set();
     allFeatures.forEach((feature) => {
@@ -461,7 +447,7 @@ function Filters() {
     const values = new Set();
     allFeatures.forEach((feature) => {
       const grade = feature.properties.oppvarmingskarakter;
-      if (grade && normalizeHeatingGrade(grade) !== 'LIGHT GREEN') values.add(grade);
+      if (grade) values.add(grade);
     });
     return Array.from(values).sort(compareHeatingGrades);
   }, [allFeatures]);
@@ -540,6 +526,23 @@ function Filters() {
                 );
               })}
             </div>
+            <div className="section-kicker ordning-kicker">Energimerkeordning</div>
+            <div className="bydel-display-toggle" role="group" aria-label="Velg energimerkeordning">
+              {ORDNINGER.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  className={`bydel-display-button ${ordning === item.value ? 'active' : ''}`}
+                  onClick={() => setOrdning(item.value)}
+                  aria-pressed={ordning === item.value}
+                >
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+            <div className="bydel-stat-note">
+              Gammel og ny ordning bruker ulike karakterskalaer og vises derfor aldri sammen.
+            </div>
             <div className="bydel-select-wrap">
               <select
                 className="bydel-select"
@@ -580,7 +583,10 @@ function Filters() {
             inert={!statsOpen}
           >
             <BydelStatsPanel
-              bydelStats={bydelStats}
+              omradeStats={omradeStats}
+              omradeStatus={omradeStatus}
+              ordning={ordning}
+              bydelNavn={selectedBydel.name}
               externalBydelStats={externalBydelStats}
               externalBydelStatus={externalBydelStatus}
             />
@@ -609,6 +615,7 @@ function Filters() {
           inert={!filtersOpen}
         >
           <div className="filters-fields">
+            <div className="bydel-stat-note">Filtrene gjelder punktene i kartet. De endrer ikke tallene i statistikken.</div>
             <RangeField
               label="Byggeår"
               min={filterBounds.byggeaar[0]}
@@ -671,6 +678,7 @@ function Filters() {
                 ))}
               </div>
             </div>
+            {heatingGrades.length > 0 && (
             <div className="filter-group">
               <div className="filter-label-row">
                 <label>
@@ -708,6 +716,7 @@ function Filters() {
                 ))}
               </div>
             </div>
+            )}
           </div>
         </div>
       </section>

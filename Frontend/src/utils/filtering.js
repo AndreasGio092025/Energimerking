@@ -211,7 +211,7 @@ function normalizeGrade(value) {
   return String(value || '').trim().toUpperCase();
 }
 
-function buildUpgradeScores(properties) {
+export function buildUpgradeScores(properties) {
   const energyGradeScore = ENERGY_GRADE_UPGRADE_SCORES[normalizeGrade(properties.energikarakter)] ?? 50;
   const heatingGradeScore = HEATING_GRADE_UPGRADE_SCORES[normalizeGrade(properties.oppvarmingskarakter)] ?? 50;
   const energyUseScore = clamp((Number(properties.energibruk_kwh_m2) || 0) / 2000 * 100, 0, 100);
@@ -528,68 +528,6 @@ export function buildInitialFilterBounds(features) {
     ],
     energibruk_kwh_m2: [0, 2000]
   };
-}
-
-function normalizedIdentityPart(value) {
-  return String(value ?? '').trim().toLowerCase();
-}
-
-function featureCoordinateKey(feature) {
-  const [longitude, latitude] = feature?.geometry?.coordinates || [];
-  if (!Number.isFinite(Number(longitude)) || !Number.isFinite(Number(latitude))) return '';
-  return `${Number(longitude).toFixed(5)}:${Number(latitude).toFixed(5)}`;
-}
-
-function certificateIdentityKey(feature) {
-  const props = feature?.properties || {};
-  const buildingNumber = firstValue(props, ['Bygningsnummer', 'bygningsnummer']);
-  const unitNumber = firstValue(props, UNIT_NUMBER_KEYS);
-
-  if (buildingNumber) {
-    return `building:${normalizedIdentityPart(buildingNumber)}:${normalizedIdentityPart(unitNumber)}`;
-  }
-
-  const matrikkel = [
-    props.kommunenummer,
-    props.gard,
-    props.bruksnummer,
-    props.feste,
-    props.seksjon,
-    props.andel,
-    unitNumber
-  ].map(normalizedIdentityPart);
-
-  if (matrikkel.slice(0, 3).every(Boolean)) {
-    return `matrikkel:${matrikkel.join(':')}`;
-  }
-
-  return [
-    'location',
-    featureCoordinateKey(feature),
-    normalizedIdentityPart(props.adresse),
-    normalizedIdentityPart(unitNumber)
-  ].join(':');
-}
-
-function certificateTimestamp(feature) {
-  const directTimestamp = Number(feature?.properties?.certificateIssuedTimestamp);
-  if (Number.isFinite(directTimestamp)) return directTimestamp;
-  return parseDateTimestamp(feature?.properties?.utstedelsesdato) ?? Number.NEGATIVE_INFINITY;
-}
-
-export function getLatestCertificateFeatures(features) {
-  const latestByIdentity = new Map();
-
-  features.forEach((feature) => {
-    const key = certificateIdentityKey(feature);
-    const current = latestByIdentity.get(key);
-
-    if (!current || certificateTimestamp(feature) > certificateTimestamp(current)) {
-      latestByIdentity.set(key, feature);
-    }
-  });
-
-  return Array.from(latestByIdentity.values());
 }
 
 export function filterFeatures(features, filters) {
