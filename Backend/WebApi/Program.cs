@@ -35,6 +35,7 @@ builder.Services.AddMemoryCache();
 // så JSON-formatet og frontend er uendret.
 // EnableForHttps: trygt her fordi svarene ikke har innlogging, tokens eller andre hemmeligheter
 // (BREACH-angrep krever hemmeligheter i samme svar som tekst angriperen styrer).
+// Vurder på nytt hvis appen får innlogging, cookies eller tokens i svar (se docs/beslutninger.md).
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;

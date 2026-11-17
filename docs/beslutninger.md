@@ -2,6 +2,10 @@
 
 Kort logg over valg som er viktige eller dyre å endre. Nyeste øverst.
 
+## 2026-11-17: API-svar komprimeres, også over HTTPS
+**Beslutning:** Backend komprimerer svar med Brotli/gzip (`AddResponseCompression`, `EnableForHttps = true`). Punktsvaret for en bydel går fra 9,6 MB til 0,8 MB på nettet; JSON-formatet er uendret. Dette løser svarstørrelsen fra beslutningen om enheter i kartet uten ny kontrakt.
+**Hvorfor:** Komprimering over HTTPS er bare risikabelt (BREACH) når svar har hemmeligheter, og appen har i dag verken innlogging, cookies eller tokens i svar. **Vurder på nytt hvis det kommer.** Lavere tak eller færre felter (ny kontrakt) vurderes hvis nettleseren blir treg av å lese 9,6 MB JSON. Se `docs/logg/2026-11-17-hovedsesjon-api-komprimering.md`.
+
 ## 2026-11-17: Databasen bygges fra repoet og en lokal dump (eieren)
 **Beslutning:** Skjema, views og funksjoner ligger i `Backend/Docker/db-init/` og kjøres automatisk på tomt volum. Grunndataene (12 tabeller, ca. 53 MB) ligger i `grunndata.dump`, som ikke er i Git; eieren lagrer den på Google Drive og lager ny etter hver import. Bare utvidelsene `postgis` og `pg_trgm` tas med, og `mv_bygg_med_koordinater` legges i repoet fordi `POST api/bygg/refresh` bruker den. Gamle views som ikke brukes (`mv_energimerke`, `mve_energimerke`, `v_bygg_med_koordinater`, `v_energimerke_oslo`, `mv_leilighet_siste_energimerke`) tas ikke med. Database og pgAdmin lytter bare på `127.0.0.1`, passord står i en lokal `.env`, og Postgres er låst til 17 / PostGIS 3.5.
 **Hvorfor:** Denorm-tabellen og 2026-importen ble laget for hånd i pgAdmin, så ingen kunne bygge databasen på nytt om volumet forsvant. Dumpen i Git ville gjort repoet tregere for alltid (Git glemmer ikke gamle versjoner); en lokal fil gir samme sikkerhetskopi uten den kostnaden. Testet: ny database ga identiske tall med live (108 107 / 13 429 enheter, Gamle Oslo 21 151). Se `docs/logg/2026-11-17-sql-agent-database-fra-repo.md`.

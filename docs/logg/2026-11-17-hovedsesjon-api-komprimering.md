@@ -4,7 +4,7 @@
 
 **Hvorfor:**
 - Punktsvaret for en bydel var ca. 9,6 MB. GeoJSON gjentar de samme feltnavnene for hvert punkt og pakker seg derfor svært godt.
-- Nivå `Fastest`: `Optimal` for Brotli bruker mye CPU på svar på flere MB, og gevinsten i størrelse er liten.
+- Nivå `Fastest`: `Optimal` for Brotli er kjent for å bruke mye CPU på svar på flere MB. At gevinsten i størrelse er liten, er en antakelse (ikke målt); `Fastest` gir allerede 8,3 %.
 - `EnableForHttps`: trygt fordi svarene ikke har innlogging, tokens eller andre hemmeligheter (BREACH-angrep krever det).
 - Forkastet foreløpig: lavere tak eller færre felter i punktsvaret. Det krever ny kontrakt og trengs ikke når svaret er under 1 MB på nettet.
 
@@ -19,7 +19,9 @@
 - Utpakket innhold er byte-for-byte likt (samme md5) for punkter, tile og statistikk.
 - Uten `Accept-Encoding` får klienten ukomprimert svar som før.
 - Ugyldige parametre gir fortsatt 400.
-- I nettleseren (kartet, Gamle Oslo): 780 kB overført, 9,4 MB utpakket, og kartet viser klyngene som før.
+- I nettleseren (kartet, Gamle Oslo), gjennom Vite-proxyen (`VITE_API_PROXY_TARGET=http://localhost:5288`, Vite på 5174): 780 kB overført, 9,4 MB utpakket, og kartet viser klyngene som før. Proxyen slipper altså komprimerte svar gjennom.
+
+**Også gjort i denne økten (utenfor repoet):** live-databasen kjører fra `Documents\DockerEnergimerke`. Der ble portene endret til `127.0.0.1:5432` og `127.0.0.1:8080` og containerne laget på nytt med samme volumer, etter full dump til `DockerEnergimerke\Data\full-2026-11-17.dump`. Sjekket: begge porter lytter bare på `127.0.0.1`, svarer lokalt og er stengt mot nettverksadressen; 108 107 / 13 429 enheter og samme salt som før. Derfor er advarselen i CLAUDE.md skrevet om.
 - Tid lokalt er omtrent den samme (ca. 0,4–0,8 s etter første kall). Gevinsten er på nettverket: 0,8 MB i stedet for 9,6 MB.
 
 **Usikkert:**

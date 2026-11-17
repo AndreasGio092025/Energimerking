@@ -71,7 +71,7 @@ Når du er ferdig, lag én fil `docs/logg/ÅÅÅÅ-MM-DD-<agent>-<kort-tema>.md`
 Store beslutninger (datamodell, faglige tolkninger, valg som er dyre å endre) skrives også i `docs/beslutninger.md`.
 
 ## Kjente åpne punkter
-- Live-databasen (`energimerke-db`) kjører fra `Documents\DockerEnergimerke`, ikke fra repoets `Backend/Docker` (portene der er satt til `127.0.0.1` 2026-11-17). Flytt live til repoets compose som egen jobb hvis ønskelig (ta dump først, aldri `down -v`).
+- Live-databasen (`energimerke-db`) kjører fra `Documents\DockerEnergimerke`, ikke fra repoets `Backend/Docker`. Portene i `DockerEnergimerke\docker-compose.yaml` ble satt til `127.0.0.1` 2026-11-17 (sjekket: lytter bare på 127.0.0.1, se `docs/logg/2026-11-17-hovedsesjon-api-komprimering.md`). Flytt live til repoets compose som egen jobb hvis ønskelig (ta dump først, aldri `down -v`).
 - `WebApi.csproj` har `Microsoft.NET.Sdk.web` (liten w); må være `Web` for Linux.
 - `energimerke.oppvarmingskarakter` er NOT NULL og blokkerer import av 2026-attester.
 - «Enkel bygg» (vektor-tiles) viser én prikk per attest, ikke per enhet.
