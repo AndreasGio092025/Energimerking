@@ -21,4 +21,4 @@ Resultat:
 - Live-databasen kjører fra en annen mappe (`Documents\DockerEnergimerke`) og lytter fortsatt på `0.0.0.0`. Endringen her virker først når live flyttes til repoets compose, eller portene rettes i den mappen.
 - Taggen `17-3.5` er ikke hentet ennå (testen brukte det lokale `latest`-imaget, som er 17.5 / 3.5.2).
 
-**Lær dette: healthcheck.** Docker kan kjøre en kommando i containeren med jevne mellomrom og merke den `healthy` eller `unhealthy`. «Kjører» betyr bare at prosessen lever; `healthy` betyr at den faktisk virker. Her sjekker vi at siste view fra `db-init` finnes, altså at hele oppbyggingen gikk gjennom.
+**healthcheck.** Docker kan kjøre en kommando i containeren med jevne mellomrom og merke den `healthy` eller `unhealthy`. «Kjører» betyr bare at prosessen lever; `healthy` betyr at den faktisk virker. Her sjekker vi at siste view fra `db-init` finnes, altså at hele oppbyggingen gikk gjennom.
