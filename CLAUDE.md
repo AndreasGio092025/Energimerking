@@ -71,12 +71,11 @@ Når du er ferdig, lag én fil `docs/logg/ÅÅÅÅ-MM-DD-<agent>-<kort-tema>.md`
 Store beslutninger (datamodell, faglige tolkninger, valg som er dyre å endre) skrives også i `docs/beslutninger.md`.
 
 ## Kjente åpne punkter
-- Live-databasen (`energimerke-db`) kjører fra `Documents\DockerEnergimerke`, ikke fra repoets `Backend/Docker`, og lytter fortsatt på `0.0.0.0`. Sett portene til `127.0.0.1` der (ta dump først, aldri `down -v`), eller flytt live til repoets compose som egen jobb.
+- Live-databasen (`energimerke-db`) kjører fra `Documents\DockerEnergimerke`, ikke fra repoets `Backend/Docker` (portene der er satt til `127.0.0.1` 2026-11-17). Flytt live til repoets compose som egen jobb hvis ønskelig (ta dump først, aldri `down -v`).
 - `WebApi.csproj` har `Microsoft.NET.Sdk.web` (liten w); må være `Web` for Linux.
 - `energimerke.oppvarmingskarakter` er NOT NULL og blokkerer import av 2026-attester.
 - «Enkel bygg» (vektor-tiles) viser én prikk per attest, ikke per enhet.
 - **Etter «enheter i kartet» (reviewer 2026-11-17, eieren: ta når det trengs eller minn eieren på det):**
-  - Svaret fra `api/enheter/punkter` er ca. 9,6 MB per bydel og ukomprimert. Eieren godtar det inntil videre; neste steg er `AddResponseCompression` (gzip), deretter ev. lavere tak eller færre felter (krever ny kontrakt).
   - `Frontend/src/dev/enheter-eksempel.js` (`kohortFor`) har egne kohortgrenser i nettleserkoden; bytt til faste kohort-tekster uten årsgrenser.
   - Ugyldig tall (`lat=abc`) i `api/enheter` gir engelsk ProblemDetails fra ASP.NET.
   - `docs/logg/2026-11-17-sql-agent-enheter-kart.md` har utdaterte stikkprøver (riktig: 21 151 enheter, 25 016 attester, 1 900 bygg i Gamle Oslo), og frontend-rapporten sier «ikke testet mot ekte API» (det er gjort).
