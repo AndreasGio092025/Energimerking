@@ -39,18 +39,42 @@ async function getJson(path, params, options = {}) {
   return payload;
 }
 
-const DEFAULT_BUILDING_QUERY = {
-  latitude: 59.917330,
-  longitude: 10.844128,
-  radiusInMeters: 3000,
-  amount: 20000,
-  onlyNew: false
-};
+// Enheter i kartet (docs/api-kontrakt.md, «Enheter i kartet»).
+// Med ?eksempel=enheter i adressen brukes oppdiktede testdata i stedet for API-et.
+// Det er aldri en stille reserve: uten parameteren gir en API-feil en feilmelding.
+function eksempelNavn() {
+  const navn = new URLSearchParams(window.location.search).get('eksempel') || '';
+  return navn.startsWith('enheter') ? navn : null;
+}
 
-export async function fetchBuildingsGeoJson(params = {}, options = {}) {
-  return getJson('/bygg/GetNearbyDeNormGeoJson', {
-    ...DEFAULT_BUILDING_QUERY,
-    ...params
+export function brukerEksempelData() {
+  return eksempelNavn() !== null;
+}
+
+// ordning: 'gammel' eller 'ny' (kartet bruker aldri 'alle').
+export async function fetchEnhetPunkter({ latitude, longitude, radiusInMeters, ordning }, options = {}) {
+  const eksempel = eksempelNavn();
+  if (eksempel) {
+    const { eksempelPunkter } = await import('../dev/enheter-eksempel.js');
+    return eksempelPunkter({ lat: latitude, lon: longitude, radius: radiusInMeters, ordning, avkortet: eksempel === 'enheter-avkortet' });
+  }
+  return getJson('/enheter/punkter', {
+    lat: latitude,
+    lon: longitude,
+    radius: Math.round(radiusInMeters),
+    ordning
+  }, options);
+}
+
+export async function fetchEnhetStatistikk({ latitude, longitude, radiusInMeters }, options = {}) {
+  if (eksempelNavn()) {
+    const { eksempelStatistikk } = await import('../dev/enheter-eksempel.js');
+    return eksempelStatistikk({ lat: latitude, lon: longitude, radius: radiusInMeters });
+  }
+  return getJson('/enheter/statistikk', {
+    lat: latitude,
+    lon: longitude,
+    radius: Math.round(radiusInMeters)
   }, options);
 }
 
@@ -60,22 +84,6 @@ export async function fetchBuildingsBoundsGeoJson(params = {}, options = {}) {
 
 export async function fetchTilePointDetails(id, options = {}) {
   return getJson('/bygg/GetTilePointDetails', { id }, options);
-}
-
-export async function fetchNearbyBuildingsGeoJson({
-  latitude,
-  longitude,
-  radiusInMeters = 5000,
-  amount = 2000,
-  onlyNew = false
-}) {
-  return getJson('/bygg/GetNearbyDeNormGeoJson', {
-    latitude,
-    longitude,
-    radiusInMeters,
-    amount,
-    onlyNew
-  });
 }
 
 export async function fetchBydelStats(bydelId) {

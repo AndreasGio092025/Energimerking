@@ -26,6 +26,7 @@ builder.Services.AddDbContext<EnergimerkingContext>(options =>
 builder.Services.AddScoped<EnergimerkingService>();
 builder.Services.AddScoped<WebApi.Services.TileService>();
 builder.Services.AddScoped<WebApi.Services.ByggOversiktService>();
+builder.Services.AddScoped<WebApi.Services.EnheterService>();
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 

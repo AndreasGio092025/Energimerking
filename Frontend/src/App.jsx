@@ -2,15 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import MapView from './components/MapView.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import SearchBar from './components/SearchBar.jsx';
-import { fetchBuildingsGeoJson, fetchNearbyBuildingsGeoJson } from './services/api.js';
+import { brukerEksempelData, fetchEnhetPunkter } from './services/api.js';
 import { useStore } from './store/useStore.js';
-import {
-  buildInitialFilterBounds,
-  filterFeatures,
-  getLatestCertificateFeatures,
-  getSearchSuggestions,
-  normalizeGeoJson
-} from './utils/filtering.js';
+import { buildInitialFilterBounds, filterFeatures, getSearchSuggestions } from './utils/filtering.js';
+import { normalizeEnhetPunkter } from './utils/enheter.js';
 import { findBydel } from './utils/osloBydeler.js';
 import './styles/app.css';
 
@@ -60,6 +55,9 @@ function App() {
   const selectedFeature = useStore((state) => state.selectedFeature);
   const selectedBydelId = useStore((state) => state.selectedBydelId);
   const nearby = useStore((state) => state.nearby);
+  const ordning = useStore((state) => state.ordning);
+  const viewMode = useStore((state) => state.viewMode);
+  const setPunktInfo = useStore((state) => state.setPunktInfo);
   const filters = useStore((state) => state.filters);
   const allFeatures = useStore((state) => state.allFeatures);
   const isLoading = useStore((state) => state.isLoading);
@@ -74,6 +72,8 @@ function App() {
   const [isSearchingNearby, setIsSearchingNearby] = useState(false);
   const [searchSelection, setSearchSelection] = useState(null);
   const bydelCacheRef = useRef(new Map());
+  // Oppgraderingsprioritet bygger på gammel ordning; ellers følger kartet valget i panelet.
+  const aktivOrdning = viewMode === 'upgrade' ? 'gammel' : ordning;
 
   useEffect(() => {
     document.body.classList.toggle('theme-dark', theme === 'dark');
@@ -83,11 +83,13 @@ function App() {
     let active = true;
     const controller = new AbortController();
     const bydel = findBydel(selectedBydelId);
-    const cachedFeatures = bydelCacheRef.current.get(selectedBydelId);
+    const cacheKey = `${selectedBydelId}:${aktivOrdning}`;
+    const cached = bydelCacheRef.current.get(cacheKey);
 
-    const applyBydelData = (features) => {
+    const applyBydelData = ({ features, avkortet, antall }) => {
       setAllFeatures(features);
-      initializeFilters(buildInitialFilterBounds(getLatestCertificateFeatures(features)));
+      setPunktInfo({ avkortet, antall });
+      initializeFilters(buildInitialFilterBounds(features));
       setNearby({
         center: {
           latitude: bydel.latitude,
@@ -98,10 +100,10 @@ function App() {
       });
     };
 
-    if (cachedFeatures) {
+    if (cached) {
       setError('');
       setLoading(false);
-      applyBydelData(cachedFeatures);
+      applyBydelData(cached);
       return () => {
         active = false;
         controller.abort();
@@ -112,24 +114,25 @@ function App() {
       try {
         setLoading(true);
         setError('');
-        const payload = await fetchBuildingsGeoJson({
+        const payload = await fetchEnhetPunkter({
           latitude: bydel.latitude,
           longitude: bydel.longitude,
           radiusInMeters: bydel.radiusInMeters,
-          amount: 20000
+          ordning: aktivOrdning
         }, {
           signal: controller.signal
         });
         if (!active) return;
-        const normalized = normalizeGeoJson(payload);
-        bydelCacheRef.current.set(selectedBydelId, normalized.features);
-        applyBydelData(normalized.features);
+        const normalized = normalizeEnhetPunkter(payload);
+        bydelCacheRef.current.set(cacheKey, normalized);
+        applyBydelData(normalized);
       } catch (loadError) {
         if (!active) return;
         if (loadError?.name === 'AbortError') return;
         setAllFeatures([]);
+        setPunktInfo({ avkortet: false, antall: 0 });
         initializeFilters(buildInitialFilterBounds([]));
-        setError(extractErrorMessage(loadError, 'Kunne ikke laste byggdata.'));
+        setError(extractErrorMessage(loadError, 'Kunne ikke hente enhetene fra serveren.'));
       } finally {
         if (active) setLoading(false);
       }
@@ -140,29 +143,25 @@ function App() {
       active = false;
       controller.abort();
     };
-  }, [initializeFilters, selectedBydelId, setAllFeatures, setError, setLoading, setNearby]);
+  }, [aktivOrdning, initializeFilters, selectedBydelId, setAllFeatures, setError, setLoading, setNearby, setPunktInfo]);
 
-  const displayFeatures = useMemo(
-    () => filters.latestOnly ? getLatestCertificateFeatures(allFeatures) : allFeatures,
-    [allFeatures, filters.latestOnly]
-  );
   const filteredFeatures = useMemo(
-    () => filterFeatures(displayFeatures, filters),
-    [displayFeatures, filters]
+    () => filterFeatures(allFeatures, filters),
+    [allFeatures, filters]
   );
   const selectedBydel = useMemo(() => findBydel(selectedBydelId), [selectedBydelId]);
   const suggestions = useMemo(
-    () => getSearchSuggestions(displayFeatures, searchQuery),
-    [displayFeatures, searchQuery]
+    () => getSearchSuggestions(allFeatures, searchQuery),
+    [allFeatures, searchQuery]
   );
   const selectedFeatureFromList = useMemo(() => {
     if (!selectedFeature?.id) return null;
     return (
       filteredFeatures.find((feature) => feature.id === selectedFeature.id) ||
-      displayFeatures.find((feature) => feature.id === selectedFeature.id) ||
+      allFeatures.find((feature) => feature.id === selectedFeature.id) ||
       null
     );
-  }, [displayFeatures, filteredFeatures, selectedFeature]);
+  }, [allFeatures, filteredFeatures, selectedFeature]);
 
   const handleSuggestionSelect = (feature) => {
     setSelectedFeature(feature);
@@ -185,17 +184,14 @@ function App() {
     });
 
     try {
-      const payload = await fetchNearbyBuildingsGeoJson({
+      const payload = await fetchEnhetPunkter({
         latitude,
         longitude,
         radiusInMeters,
-        amount: 2000
+        ordning: aktivOrdning
       });
-      const normalized = normalizeGeoJson(payload);
-      const nearbyFeatures = filters.latestOnly
-        ? getLatestCertificateFeatures(normalized.features)
-        : normalized.features;
-      const results = nearbyFeatures
+      const normalized = normalizeEnhetPunkter(payload);
+      const results = normalized.features
         .map((feature) => {
           const [featureLongitude, featureLatitude] = feature.geometry.coordinates;
           const featurePoint = {
@@ -207,7 +203,7 @@ function App() {
             coordinateid: feature.properties.id,
             latitude: featurePoint.latitude,
             longitude: featurePoint.longitude,
-            bruksenhetsNr: feature.properties.bruksenhetsNr || feature.properties.brukenhetsnummer || '',
+            adresse: feature.properties.adresse,
             energikarakter: feature.properties.energikarakter || '',
             distanceInMeters: distanceInMeters(center, featurePoint)
           };
@@ -223,7 +219,7 @@ function App() {
         results
       });
     } catch (nearbyError) {
-      setError(extractErrorMessage(nearbyError, 'Kunne ikke søke etter bygg i nærheten.'));
+      setError(extractErrorMessage(nearbyError, 'Kunne ikke søke etter enheter i nærheten.'));
     } finally {
       setIsSearchingNearby(false);
     }
@@ -231,10 +227,10 @@ function App() {
 
   const isEmpty = !isLoading && !error && filteredFeatures.length === 0;
   const emptyTitle = allFeatures.length === 0
-    ? 'Ingen data er lastet fra backend'
-    : 'Ingen bygg passer med filtrene';
+    ? 'Ingen enheter funnet i området'
+    : 'Ingen enheter passer med filtrene';
   const emptyCopy = allFeatures.length === 0
-    ? 'Prøv standardverdiene i Swagger: breddegrad 59,9, lengdegrad 10,8, radius 2500.'
+    ? 'Det finnes ingen enheter med kartpunkt i dette området for valgt ordning. Prøv en annen bydel eller den andre ordningen.'
     : 'Juster områdene eller karakterfiltrene for å få treff igjen.';
 
   return (
@@ -245,6 +241,9 @@ function App() {
           isSearchingNearby={isSearchingNearby}
         />
         <main className="app-main">
+          {brukerEksempelData() && (
+            <div className="eksempel-banner" role="note">Testdata med oppdiktede adresser (?eksempel=enheter). Ikke ekte tall.</div>
+          )}
           <div className="top-overlay">
             <SearchBar
               suggestions={suggestions}
@@ -254,7 +253,7 @@ function App() {
           </div>
           <MapView
             features={filteredFeatures}
-            allFeaturesCount={displayFeatures.length}
+            allFeaturesCount={allFeatures.length}
             selectedFeature={selectedFeatureFromList}
             searchSelection={searchSelection}
             nearbyState={nearby}

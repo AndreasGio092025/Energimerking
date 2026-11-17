@@ -73,4 +73,13 @@ Store beslutninger (datamodell, faglige tolkninger, valg som er dyre å endre) s
 ## Kjente åpne punkter
 - `WebApi.csproj` har `Microsoft.NET.Sdk.web` (liten w); må være `Web` for Linux.
 - `energimerke.oppvarmingskarakter` er NOT NULL og blokkerer import av 2026-attester.
-- **Neste oppgave (eieren 2026-11-16):** kartpunktene og statistikkpanelet viser én enhet per eiendom med siste attest, men enhetsnøkkelen i frontend følger ikke regelen (matrikkel/seksjon i stedet for bygningsnummer, og `latestOnly` i `filtering.js` mangler adresse). Panelet gjelder bare de inntil 20 000 attestene som er lastet inn rundt bydelen, og vil blande gammel og ny ordning når 2026-attester kommer inn i kartet. Erstatt med tall fra `mv_siste_attest_per_enhet`, delt på ordning (SQL + API + frontend, egen plan). «Enkel bygg» (vektor-tiles) viser én prikk per attest.
+- «Enkel bygg» (vektor-tiles) viser én prikk per attest, ikke per enhet.
+- **Etter «enheter i kartet» (reviewer 2026-11-17, eieren: ta når det trengs eller minn eieren på det):**
+  - Svaret fra `api/enheter/punkter` er ca. 9,6 MB per bydel og ukomprimert. Eieren godtar det inntil videre; neste steg er `AddResponseCompression` (gzip), deretter ev. lavere tak eller færre felter (krever ny kontrakt).
+  - README forklarer ikke at `SELECT refresh_enheter_kart();` må kjøres etter hver import (ellers står kartet på forrige import).
+  - `05_siste_attest_per_enhet.sql` sier «kan kjøres på nytt», men `DROP MATERIALIZED VIEW` uten CASCADE feiler fordi 07 og 08 bygger på viewet. Rett kommentaren eller beskriv rekkefølgen.
+  - `Frontend/src/dev/enheter-eksempel.js` (`kohortFor`) har egne kohortgrenser i nettleserkoden; bytt til faste kohort-tekster uten årsgrenser.
+  - Ugyldig tall (`lat=abc`) i `api/enheter` gir engelsk ProblemDetails fra ASP.NET.
+  - `docs/logg/2026-11-17-sql-agent-enheter-kart.md` har utdaterte stikkprøver (riktig: 21 151 enheter, 25 016 attester, 1 900 bygg i Gamle Oslo), og frontend-rapporten sier «ikke testet mot ekte API» (det er gjort).
+  - `Sidebar.jsx` sier «Søker etter bygg nær stedet …», men søket gir enheter.
+  - I Oppgraderingsprioritet viser kartet alltid gammel ordning og skjuler ordningsvalget; filterteksten nevner «statistikken», som ikke vises der.

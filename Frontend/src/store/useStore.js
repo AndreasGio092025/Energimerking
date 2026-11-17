@@ -12,6 +12,8 @@ export const useStore = create((set) => ({
   error: '',
   viewMode: 'markers',
   bydelDisplayMode: 'clusters',
+  ordning: 'gammel',
+  punktInfo: { avkortet: false, antall: 0 },
   selectedBydelId: 'gamle-oslo',
   nearbySearchEnabled: false,
   radiusInMeters: 5000,
@@ -29,7 +31,6 @@ export const useStore = create((set) => ({
     energibruk_kwh_m2: defaultBounds.energibruk_kwh_m2,
     energikarakter: [],
     oppvarmingskarakter: 'all',
-    latestOnly: true,
     certificateScheme: 'all'
   },
   toggleTheme: () =>
@@ -52,6 +53,8 @@ export const useStore = create((set) => ({
         : { viewMode }
     )),
   setBydelDisplayMode: (bydelDisplayMode) => set({ bydelDisplayMode }),
+  setOrdning: (ordning) => set({ ordning, selectedFeature: null }),
+  setPunktInfo: (punktInfo) => set({ punktInfo }),
   setSelectedBydelId: (selectedBydelId) => set({ selectedBydelId, selectedFeature: null }),
   toggleNearbySearch: () =>
     set((state) => {
@@ -95,7 +98,6 @@ export const useStore = create((set) => ({
         energibruk_kwh_m2: bounds.energibruk_kwh_m2,
         energikarakter: [],
         oppvarmingskarakter: 'all',
-        latestOnly: true,
         certificateScheme: 'all'
       }
     }),
@@ -120,7 +122,6 @@ export const useStore = create((set) => ({
         energibruk_kwh_m2: state.filterBounds.energibruk_kwh_m2,
         energikarakter: [],
         oppvarmingskarakter: 'all',
-        latestOnly: true,
         certificateScheme: 'all'
       }
     }))

@@ -14,6 +14,8 @@
 -- Personvern: funksjonene gir aldri bruksenhetsnummer, attestnummer eller enhet_id i utdata.
 -- Alle tall er summer, andeler eller medianer over enheter.
 --
+-- (Er 08_enheter_kart.sql installert, kjør heller   SELECT refresh_enheter_kart();   som kaller denne
+-- og oppdaterer kartviewet etterpå.)
 -- VIKTIG: kjør   SELECT refresh_bygg_oversikt();   etter HVER import av attester.
 -- Den oppdaterer alle viewene bak bygg-siden i riktig rekkefølge (se del 0b). Glemmes det, viser
 -- bygg-siden tall fra forrige import, og funksjonene gir nok_data = false i stedet for feil tall
