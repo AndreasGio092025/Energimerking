@@ -30,7 +30,30 @@ builder.Services.AddScoped<WebApi.Services.EnheterService>();
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 
+// Komprimerer svarene (Brotli eller gzip, etter hva nettleseren ber om). Punktsvaret for en bydel er
+// ca. 9,6 MB ukomprimert; GeoJSON med gjentatte feltnavn pakker seg godt. Nettleseren pakker ut selv,
+// så JSON-formatet og frontend er uendret.
+// EnableForHttps: trygt her fordi svarene ikke har innlogging, tokens eller andre hemmeligheter
+// (BREACH-angrep krever hemmeligheter i samme svar som tekst angriperen styrer).
+// Vurder på nytt hvis appen får innlogging, cookies eller tokens i svar (se docs/beslutninger.md).
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+    options.MimeTypes = Microsoft.AspNetCore.ResponseCompression.ResponseCompressionDefaults.MimeTypes
+        .Concat(["application/vnd.mapbox-vector-tile"]);
+});
+// Fastest: Optimal-nivået for Brotli bruker for mye CPU på svar på flere MB.
+builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProviderOptions>(
+    o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
+builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProviderOptions>(
+    o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
+
 var app = builder.Build();
+
+// Først i rekken, så alle svar under (også feilsvar og statiske filer) kan komprimeres.
+app.UseResponseCompression();
 
 // Felles feilhåndtering: uventede feil logges, og klienten får aldri unntakstekst eller stack trace
 // (heller ikke i Development, der ASP.NET ellers viser detaljene).
