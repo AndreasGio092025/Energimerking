@@ -1,7 +1,13 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-const devHost = process.env.VITE_HOST || "0.0.0.0";
+// Bare denne maskinen som standard. Sett VITE_HOST=0.0.0.0 for å åpne for nettverket.
+const devHost = process.env.VITE_HOST || "localhost";
+// Ekstra vertsnavn (f.eks. en tunnel) kommaseparert i VITE_ALLOWED_HOSTS.
+const allowedHosts = (process.env.VITE_ALLOWED_HOSTS || "")
+  .split(",")
+  .map((host) => host.trim())
+  .filter(Boolean);
 const devPort = Number(process.env.VITE_PORT || 5173);
 const apiProxyTarget =
   process.env.VITE_API_PROXY_TARGET || "http://localhost:5277";
@@ -21,7 +27,7 @@ export default defineConfig({
     host: devHost,
     port: devPort,
     strictPort: true,
-    allowedHosts: ["return-prominent-actions-favors.trycloudflare.com"],
+    allowedHosts,
     hmr:
       hmrHost || hmrClientPort
         ? {

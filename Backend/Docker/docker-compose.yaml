@@ -3,32 +3,34 @@ services:
     image: postgis/postgis
     container_name: energimerke-db
     restart: always
+    # Verdiene leses fra .env i denne mappen (kopier .env.example til .env).
     environment:
-      - POSTGRES_DB=Energimerking
-      - POSTGRES_USER=Kodehode
-      - POSTGRES_PASSWORD=12345
+      - POSTGRES_DB=${POSTGRES_DB:?Mangler .env, kopier .env.example til .env}
+      - POSTGRES_USER=${POSTGRES_USER:?Mangler .env, kopier .env.example til .env}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?Mangler .env, kopier .env.example til .env}
+    # Bare denne maskinen kan koble til (ikke andre på nettverket).
     ports:
-      - 5432:5432
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgis:/var/lib/postgresql/data
-      - db-init:/docker-entrypoint-initdb.d
+      # SQL-filene i repoet kjøres i navnerekkefølge første gang databasen lages (tomt volum).
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+      # Her legger du grunndata.dump (ligger ikke i Git, se README).
       - ./Data:/import
-  
-      
+
   pgadmin:
-    image: dpage/pgadmin4:9.8 # Use the official pgAdmin image
+    image: dpage/pgadmin4:9.8
     restart: always
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
-      PGADMIN_DEFAULT_PASSWORD: securepassword
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:?Mangler .env, kopier .env.example til .env}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?Mangler .env, kopier .env.example til .env}
     ports:
-      - "8080:80" # Map host port 8080 to container port 80
+      - "127.0.0.1:8080:80"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     depends_on:
       - postgis
+
 volumes:
   postgis:
   pgadmin_data:
-  db-init:
-  

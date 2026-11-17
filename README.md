@@ -68,38 +68,68 @@ Kjør kommandoene fra rotmappen i repoet hvis ikke annet er oppgitt.
 
 ### 1. Start database
 
-```powershell
-cd Backend\Docker
-docker compose up -d
-```
+Databasen bygges fra filene i `Backend/Docker/db-init/` pluss én datafil, `grunndata.dump`.
+Datafila ligger **ikke** i Git (den er stor og deles direkte, f.eks. via Google Drive). Spør
+prosjekteieren om den.
+
+1. Legg `grunndata.dump` i `Backend/Docker/Data/`.
+2. Lag din egen `.env` med brukernavn og passord (fila ligger ikke i Git):
+
+   ```powershell
+   cd Backend\Docker
+   Copy-Item .env.example .env
+   ```
+
+3. Start databasen:
+
+   ```powershell
+   docker compose up -d
+   ```
+
+4. Første gang (tomt databasevolum) leser Postgres inn dumpen og kjører SQL-filene i
+   `db-init/` i navnerekkefølge. Det tar noen minutter. Følg med til den er klar:
+
+   ```powershell
+   docker logs -f energimerke-db
+   ```
+
+   Vent til siste linje er `database system is ready to accept connections` etter at init-skriptene er ferdige.
+   Mangler `grunndata.dump`, stopper oppstarten med en melding om det.
 
 Dette starter:
 
 - PostgreSQL/PostGIS på `localhost:5432`
 - pgAdmin på `http://localhost:8080`
 
-Standard databaseoppsett i `docker-compose.yaml`:
+Begge er bare tilgjengelige fra din egen maskin (`127.0.0.1`), ikke fra andre på nettverket.
+Brukernavn og passord står i `.env` (standardverdier i `.env.example`).
 
-```text
-Database: Energimerking
-User:     Kodehode
-Password: 12345
+Postgres leser `db-init/` og `.env` bare når databasevolumet er tomt. For å bygge databasen helt
+på nytt (sletter alle data i volumet):
+
+```powershell
+docker compose down -v
+docker compose up -d
 ```
 
-pgAdmin-login:
+### Ny import av data
 
-```text
-Email:    admin@example.com
-Password: securepassword
-```
+Etter at du har lastet inn nye attester eller annen grunndata:
 
-Merk: `Backend/Docker/db-init/Energimerking.sql` ligger i repoet, men compose-filen bruker per nå et navngitt Docker-volum for `/docker-entrypoint-initdb.d`. Det betyr at SQL-filen ikke nødvendigvis kjøres automatisk ved første oppstart. Hvis databasen er tom, importer SQL-filen manuelt i databasen eller endre volumet i compose-filen til en bind mount, for eksempel:
+1. Oppdater kart og statistikk (ellers viser appen forrige import):
 
-```yaml
-- ./db-init:/docker-entrypoint-initdb.d
-```
+   ```powershell
+   docker exec energimerke-db psql -U Kodehode -d Energimerking -c "SELECT refresh_enheter_kart();"
+   ```
 
-Dette må gjøres før første databaseoppstart, eller etter at databasevolumet er slettet.
+2. Lag en ny `grunndata.dump` og legg den på Google Drive i stedet for den gamle:
+
+   ```powershell
+   docker exec energimerke-db pg_dump -U Kodehode -d Energimerking -Fc --no-owner --no-privileges -t public.bygning -t public.coordinates -t public.coordinates_raw -t public.denorm_matrikkel_og_enova_oslo -t public.eiendom -t public.eiendom_bygning -t public.energiattester -t public.energikarakter -t public.energimerke -t public.enova_raw -t public.kommune -t public.oppvarmingskarakter -f /tmp/grunndata.dump
+   docker cp energimerke-db:/tmp/grunndata.dump Backend\Docker\Data\grunndata.dump
+   ```
+
+   Kjør den andre kommandoen fra rotmappen i repoet.
 
 ### 2. Start backend
 
@@ -197,7 +227,11 @@ VITE_PORT
 VITE_API_PROXY_TARGET
 VITE_HMR_HOST
 VITE_HMR_CLIENT_PORT
+VITE_ALLOWED_HOSTS
 ```
+
+Vite lytter bare på `localhost` som standard. Sett `VITE_HOST=0.0.0.0` for å åpne for andre på
+nettverket, og `VITE_ALLOWED_HOSTS` (kommaseparert) for ekstra vertsnavn, f.eks. en Cloudflare-tunnel.
 
 ## Bygg
 

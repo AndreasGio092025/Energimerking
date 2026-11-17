@@ -483,6 +483,9 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
+# Databasedump med grunndata deles direkte, ikke via Git
+Backend/Docker/Data/*.dump
+
 # Claude Code: automatisk agentlogg
 docs/logg/aktivitet.log
 
