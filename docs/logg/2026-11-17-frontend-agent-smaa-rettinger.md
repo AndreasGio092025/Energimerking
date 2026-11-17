@@ -17,7 +17,7 @@
 **Treff på kohortgrenser (1949, 1969, 1986, 1996, 2006, 2016, 2017) i `Frontend/src`:**
 - `dev/enheter-eksempel.js`: `kohortFor` (fjernet); `KOHORTER` med ferdige tekster beholdt.
 - `dev/bygg-oversikt-eksempel*.json` (4 filer): bare ferdige `kohort`-tekster som data, ingen logikk.
-- Ingen andre treff. Ingen annen kode i src regner kohort fra byggeår. `enheter-eksempel.js` brukes bare fra `services/api.js` (dynamisk import) ved `?eksempel=enheter`.
+- Ingen andre treff. Ingen annen kode i src regner kohort fra byggeår. *(Rettet av hovedsesjonen etter reviewer: søket tok ikke med nedre grenser som 1970, 1987, 1997, 2007. `utils/upgradeInsights.js` har egne poenggrenser `< 1987` og `< 2010` for Oppgraderingsprioritet. Det er ikke «lignende bygg», men står som åpent punkt i CLAUDE.md.)* `enheter-eksempel.js` brukes bare fra `services/api.js` (dynamisk import) ved `?eksempel=enheter`.
 
 **Testet:**
 - `npm run build` uten feil (bare vanlig advarsel om store filer). `dist/` er sporet i git og ble endret av bygget; det er tilbakestilt og ikke committet.
@@ -25,7 +25,7 @@
 - I nettleseren: Oppgraderingsprioritet viser nytt filternotat og pillen «Viser Gammel ordning (før 2026)»; vanlig visning viser det gamle notatet om statistikken (slik det skal).
 
 **Usikkert:**
-- «Søker etter enheter …» og «Finner enheter i nærheten …» er bare verifisert i kildekode og bygg, ikke sett i nettleseren: kartklikket startet ikke radiussøk i den automatiske testen (radius på, klikk i kartet). Bør klikkes manuelt.
+- «Søker etter enheter …» og «Finner enheter i nærheten …» er bare verifisert i kildekode og bygg, ikke sett i nettleseren: kartklikket startet ikke radiussøk i den automatiske testen (radius på, klikk i kartet). Bør klikkes manuelt. *(Senere gjort av hovedsesjonen: radiussøket viste «Søker etter enheter nær stedet …», «Finner enheter i nærheten innenfor 5 000 m …» og «200 enheter i nærheten (maks 200)».)*
 - Kohort i eksempeldata trekkes uavhengig av byggeår, så en rad kan ha f.eks. byggeår 2020 og kohort «før 1949». Gjelder bare testdata bak `?eksempel=enheter`.
 - «Fant ingen bygg som passer» i `SearchBar.jsx` gjelder adressesøk (bygg), ikke radiussøk, og er ikke endret.
 - Skjermbilde med Playwright ble ikke tatt; brukte nettleserpanelet i stedet.

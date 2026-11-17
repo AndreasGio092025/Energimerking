@@ -75,4 +75,5 @@ Store beslutninger (datamodell, faglige tolkninger, valg som er dyre å endre) s
 - `WebApi.csproj` har `Microsoft.NET.Sdk.web` (liten w); må være `Web` for Linux.
 - `energimerke.oppvarmingskarakter` er NOT NULL og blokkerer import av 2026-attester.
 - «Enkel bygg» (vektor-tiles) viser én prikk per attest, ikke per enhet.
-- Tellehull (eieren 2026-11-17: la stå): 481 Oslo-attester fra 2025 (209 enheter) mangler i den manuelle denorm-tabellen men finnes i `enova_raw`, og 62 attester i 2026 (8 enheter) har Knr «301» og fanges ikke av `knr = '0301'` i `04_attester.sql`.
+- Tellehull (eieren 2026-11-17: la stå, se `docs/beslutninger.md`): 481 Oslo-attester fra 2025 (209 enheter) mangler i `denorm_matrikkel_og_enova_oslo` men finnes i `enova_raw`, og 62 attester i 2026 (8 enheter) har Knr «301» og fanges ikke av `knr = '0301'` i `04_attester.sql`.
+- Oppgraderingsprioritet (`Frontend/src/utils/upgradeInsights.js`) har egne årsgrenser for poeng (`< 1987`, `< 2010`) i nettleseren. Ikke «lignende bygg», men avklar med eieren om den bør bruke `kohort` fra API-et.

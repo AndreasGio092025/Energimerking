@@ -83,7 +83,10 @@ internal sealed class NorskParameterfeilAttribute : Attribute, Microsoft.AspNetC
     public void OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext context)
     {
         if (context.ModelState.IsValid) return;
-        var parameter = context.ModelState.First(kv => kv.Value?.Errors.Count > 0).Key;
+        // Bare første feil meldes (i praksis rekkefølgen lat, lon, radius). Finnes ingen feil med
+        // tekst (sjeldent), slippes forespørselen videre til ASP.NET i stedet for å kaste unntak.
+        var parameter = context.ModelState.FirstOrDefault(kv => kv.Value?.Errors.Count > 0).Key;
+        if (parameter is null) return;
         context.Result = new BadRequestObjectResult(EnheterController.Feiltekst(parameter));
     }
 
