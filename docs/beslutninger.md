@@ -2,6 +2,10 @@
 
 Kort logg over valg som er viktige eller dyre å endre. Nyeste øverst.
 
+## 2026-11-17: Enheter i kartet: popup, fotnote og svarstørrelse (eieren)
+**Beslutning:** Kartet viser alle tall per enhet også for småhus med én enhet (adresse, karakter, beregnet levert energi, dato), som på bygg-siden. Enheter uten kartpunkt (0,07 % i hele Oslo) står som fotnote nederst i områdestatistikken, ikke øverst. Punktsvaret får være ca. 9,6 MB per bydel (gammel ordning, Gamle Oslo) inntil videre.
+**Hvorfor:** Dataene er offentlige hos Enova, og kartet bør være konsekvent med bygg-siden. Tallet uten posisjon gjelder hele Oslo og er lite, så det skal ikke ta plass fra tallene for området. Svarstørrelsen kan tas senere med komprimering eller lavere tak (det siste krever endret kontrakt).
+
 ## 2026-11-17: Kartpunkt per enhet (koordinat-kjede)
 **Beslutning:** Hver enhet får kartpunkt fra første treff av: egen attest, samme enhet i andre ordning, samme bygg og adresse, matrikkelens adressepunkt (`coordinates`), annen enhet i samme bygg, annet punkt på samme gnr/bnr. Ingen treff = ingen punkt (telles i `enheter_uten_kartpunkt`). Tabellen `eiendom` brukes ikke som koordinatkilde. Dekning: 99,95 % (gammel) og 99,77 % (ny).
 **Hvorfor:** Målt: `eiendom.coordinateid` peker ofte på en annen eiendoms punkt (median 313 m fra nærmeste enhet i samme gate), mens `coordinates` på gnr/bnr treffer riktig. Matrikkelens adressepunkt er bedre enn et nabopunkt i bygget (median 19 m forskjell). Se `docs/logg/2026-11-17-sql-agent-enheter-kart.md`.

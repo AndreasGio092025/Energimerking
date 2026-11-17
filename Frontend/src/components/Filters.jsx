@@ -269,11 +269,6 @@ function OmradeStatistikk({ rad, omrade, bydelNavn, status }) {
         Sirkelen følger ikke bydelsgrensen. {rad.periode ? `Grunnlag: ${rad.periode}.` : ''}
       </div>
       <div className="bydel-stat-note">Filtrene lenger ned påvirker ikke disse tallene, bare punktene i kartet.</div>
-      {rad.enheter_uten_kartpunkt > 0 && (
-        <div className="bydel-stat-note">
-          I hele Oslo mangler {rad.enheter_uten_kartpunkt.toLocaleString('nb-NO')} enheter i {rad.ordning === 'ny' ? 'ny' : 'gammel'} ordning kartpunkt. De er ikke med i noe område.
-        </div>
-      )}
       <BydelStat label="Antall enheter" value={formatCount(rad.antall_enheter, 'enheter')} />
       <BydelStat label="Antall attester" value={formatCount(rad.antall_attester, 'attester')} />
       <BydelStat label="Antall bygg" value={formatCount(rad.antall_bygg, 'bygg')} />
@@ -293,6 +288,12 @@ function OmradeStatistikk({ rad, omrade, bydelNavn, status }) {
           value={formatCount(count, 'enheter')}
         />
       ))}
+      {rad.enheter_uten_kartpunkt > 0 && (
+        <div className="bydel-stat-fotnote">
+          I hele Oslo har {rad.enheter_uten_kartpunkt.toLocaleString('nb-NO')} enheter i {rad.ordning === 'ny' ? 'ny' : 'gammel'} ordning
+          ingen posisjon. De er ikke med i kartet eller i tallene over.
+        </div>
+      )}
     </>
   );
 }
