@@ -1448,3 +1448,21 @@
     gap: 4px;
   }
 }
+
+/* Enheter i kartet */
+.marker-popup-same-point {
+  margin: 12px 20px 0;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: rgba(249, 115, 22, 0.1);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.marker-popup-same-point + .marker-popup-snapshot {
+  padding-top: 12px;
+}
+
+.marker-popup-snapshot {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
