@@ -41,6 +41,7 @@ export function normalizeEnhetPunkter(payload) {
         antall_enheter_samme_punkt: raw.antall_enheter_samme_punkt ?? 1,
         energibruk_kwh_m2: Number.isFinite(energi) ? energi : null,
         certificateScheme: raw.ordning === 'ny' ? '2026' : 'legacy',
+        certificateSchemeLabel: ordningLabel(raw.ordning),
         searchText: String(raw.adresse || '').toLowerCase()
       };
       return {

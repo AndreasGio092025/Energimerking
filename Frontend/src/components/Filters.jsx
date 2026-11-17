@@ -271,7 +271,7 @@ function OmradeStatistikk({ rad, omrade, bydelNavn, status }) {
       <div className="bydel-stat-note">Filtrene lenger ned påvirker ikke disse tallene, bare punktene i kartet.</div>
       {rad.enheter_uten_kartpunkt > 0 && (
         <div className="bydel-stat-note">
-          {rad.enheter_uten_kartpunkt.toLocaleString('nb-NO')} enheter i ordningen har ikke kartpunkt og er ikke med.
+          I hele Oslo mangler {rad.enheter_uten_kartpunkt.toLocaleString('nb-NO')} enheter i {rad.ordning === 'ny' ? 'ny' : 'gammel'} ordning kartpunkt. De er ikke med i noe område.
         </div>
       )}
       <BydelStat label="Antall enheter" value={formatCount(rad.antall_enheter, 'enheter')} />

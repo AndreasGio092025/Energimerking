@@ -25,7 +25,7 @@ public class EnheterController : ControllerBase
     /// <summary>Ett kartpunkt per enhet i sirkelen, for valgt ordning (standard gammel).</summary>
     [HttpGet("punkter")]
     [Produces("application/json")]
-    public async Task<IActionResult> Punkter(double lat, double lon, int radius, string ordning = "gammel", CancellationToken ct = default)
+    public async Task<IActionResult> Punkter(double? lat, double? lon, int? radius, string ordning = "gammel", CancellationToken ct = default)
     {
         var feil = Valider(lat, lon, radius);
         if (feil != null) return BadRequest(feil);
@@ -34,27 +34,28 @@ public class EnheterController : ControllerBase
         if (!GyldigeOrdninger.Contains(ordning))
             return BadRequest("ordning må være gammel, ny eller alle.");
 
-        var json = await _service.HentPunkterAsync(lat, lon, radius, ordning, ct);
+        var json = await _service.HentPunkterAsync(lat!.Value, lon!.Value, radius!.Value, ordning, ct);
         return Content(json ?? "{\"type\":\"FeatureCollection\",\"features\":[],\"avkortet\":false,\"antall\":0}", "application/json");
     }
 
     /// <summary>Statistikk per ordning over alle enheter med kartpunkt i sirkelen.</summary>
     [HttpGet("statistikk")]
     [Produces("application/json")]
-    public async Task<IActionResult> Statistikk(double lat, double lon, int radius, CancellationToken ct = default)
+    public async Task<IActionResult> Statistikk(double? lat, double? lon, int? radius, CancellationToken ct = default)
     {
         var feil = Valider(lat, lon, radius);
         if (feil != null) return BadRequest(feil);
 
-        var json = await _service.HentStatistikkAsync(lat, lon, radius, ct);
+        var json = await _service.HentStatistikkAsync(lat!.Value, lon!.Value, radius!.Value, ct);
         return json == null ? NotFound() : Content(json, "application/json");
     }
 
-    private static string? Valider(double lat, double lon, int radius)
+    // Manglende parametre skal gi 400, ikke stille bli 0 (kontrakten).
+    private static string? Valider(double? lat, double? lon, int? radius)
     {
-        if (double.IsNaN(lat) || lat < -90 || lat > 90) return "lat må være mellom -90 og 90.";
-        if (double.IsNaN(lon) || lon < -180 || lon > 180) return "lon må være mellom -180 og 180.";
-        if (radius < 1 || radius > MaksRadius) return $"radius må være mellom 1 og {MaksRadius} meter.";
+        if (lat is not { } la || double.IsNaN(la) || la < -90 || la > 90) return "lat må være et tall mellom -90 og 90.";
+        if (lon is not { } lo || double.IsNaN(lo) || lo < -180 || lo > 180) return "lon må være et tall mellom -180 og 180.";
+        if (radius is not { } r || r < 1 || r > MaksRadius) return $"radius må være et heltall mellom 1 og {MaksRadius} meter.";
         return null;
     }
 }
