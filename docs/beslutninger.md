@@ -2,6 +2,14 @@
 
 Kort logg over valg som er viktige eller dyre å endre. Nyeste øverst.
 
+## 2026-11-17: Kjente tellehull får stå (eieren)
+**Beslutning:** Tallene i appen er litt for lave, og det lar vi stå inntil videre. Det gjelder 2025 og 2026.
+- **2025 (gammel ordning):** CSV-fila fra Enova (`01012025_31122025.csv`, Knr 0301) har 126 844 attester og 108 316 enheter. Databasen har 126 363 attester og 108 107 enheter. Forskjellen er 481 attester som finnes i `enova_raw`, men ikke i `denorm_matrikkel_og_enova_oslo` (laget for hånd i pgAdmin). Mange er nye bygg med bygningsnummer 3001…, og netto mangler 209 enheter.
+- **2026 (ny ordning):** CSV-fila (`01012026_15072026_v2.csv`) har 62 Oslo-attester med Knr «301» i stedet for «0301». `04_attester.sql` filtrerer på `knr = '0301'`, så de kommer ikke med. Det gir 8 enheter (53 av attestene mangler bygningsnummer). For Knr 0301 er tallene like: 17 718 attester og 13 429 enheter.
+- **Uten bygningsnummer:** 871 attester (2025) og 87 (2026) telles som attester, men ikke som enheter. Det er etter regelen.
+
+**Hvorfor:** Forskjellen er under 0,2 %. Rettingen er å hente de manglende 2025-attestene fra `enova_raw` og godta `knr IN ('0301','301')` i `04_attester.sql`. Det krever ny test av tall og kartpunkter. Målt av hovedsesjonen 2026-11-17 ved å telle CSV-filene og sammenligne med `v_attester` og `mv_siste_attest_per_enhet`.
+
 ## 2026-11-17: API-svar komprimeres, også over HTTPS
 **Beslutning:** Backend komprimerer svar med Brotli/gzip (`AddResponseCompression`, `EnableForHttps = true`). Punktsvaret for en bydel går fra 9,6 MB til 0,8 MB på nettet; JSON-formatet er uendret. Dette løser svarstørrelsen fra beslutningen om enheter i kartet uten ny kontrakt.
 **Hvorfor:** Komprimering over HTTPS er bare risikabelt (BREACH) når svar har hemmeligheter, og appen har i dag verken innlogging, cookies eller tokens i svar. **Vurder på nytt hvis det kommer.** Lavere tak eller færre felter (ny kontrakt) vurderes hvis nettleseren blir treg av å lese 9,6 MB JSON. Se `docs/logg/2026-11-17-hovedsesjon-api-komprimering.md`.

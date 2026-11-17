@@ -43,7 +43,7 @@ Alt mot lokal Postgres (`energimerke-db`, PostGIS 3.5).
 - **Stikkprøver mot rådata:**
   1. `a_attest`: alle 106 852 punkter er identiske (under 0,5 m) med `denorm...coordinate` for attesten.
   2. `b_annen_ordning`: alle 3 833 nye enheter har samme punkt som gammel attest av samme enhet; `d_matrikkel_adr`: alle 6 314 har samme punkt som `coordinates`-raden med samme gnr/bnr/adresse; `c_bygg_adresse`: alle 3 115 sammenfaller med et `a_attest`-punkt i samme bygg og adresse.
-  3. Gamle Oslo, gammel ordning: 21 161 enheter, 25 028 attester, 1 902 bygg, median 161,5 og snitt 184,4 kWh/m², 2 892 på G regnet direkte på `mv_enhet_punkt` med `ST_Distance`; antall attester stemmer også mot telling i `v_attester` for samme enheter (25 028). Samme sirkel regnet i geography (sfære) gir 21 142 enheter: de 19 ekstra er enheter innenfor ca. 1 m av kanten (UTM-skalafeilen).
+  3. *(Rettet av hovedsesjonen: tallene under er fra en tidligere kjøring. Riktig i den ferdige versjonen, også målt gjennom API-et og i ny database bygget fra repoet: 21 151 enheter, 25 016 attester, 1 900 bygg.)* Gamle Oslo, gammel ordning: 21 161 enheter, 25 028 attester, 1 902 bygg, median 161,5 og snitt 184,4 kWh/m², 2 892 på G regnet direkte på `mv_enhet_punkt` med `ST_Distance`; antall attester stemmer også mot telling i `v_attester` for samme enheter (25 028). Samme sirkel regnet i geography (sfære) gir 21 142 enheter: de 19 ekstra er enheter innenfor ca. 1 m av kanten (UTM-skalafeilen).
 - **Nøyaktighet for omplasserte enheter** (avstand til nærmeste enhet med eget punkt på samme gnr/bnr): `d_matrikkel_adr` median 20 m, 90 % 62 m, maks 195 m (andre adresser på samme eiendom ligger så langt unna hverandre); `d_matrikkel_gb` median 51 m, 90 % 105 m, maks 212 m i samme gate; `c_bygg` 0 m fra et punkt i samme bygg.
 - Største antall enheter på samme punkt: 228. Alle punkter ligger i Oslo (lat 59,82-60,04, lon 10,60-10,95).
 
@@ -54,7 +54,7 @@ Alt mot lokal Postgres (`energimerke-db`, PostGIS 3.5).
 - **`id` er stabil bare i samme database** (saltet). Gjenskapes databasen fra scratch, får enhetene nye id-er.
 - **52 + 31 enheter (0,07 %) har ingen koordinat** (ingen `coordinates`-rad med lengdegrad, og `eiendom` er ikke trygg).
 - **Refresh:** den som importerer må kjøre `refresh_enheter_kart()` (ikke bare `refresh_bygg_oversikt()`), ellers står kartpunktene på forrige import. Viewet har ingen vakt mot dette.
-- Ikke testet gjennom C#/HTTP; bare SQL-funksjonene.
+- Ikke testet gjennom C#/HTTP; bare SQL-funksjonene. *(Senere gjort av hovedsesjonen: API og kart er testet mot ekte data, og panelet stemmer med API-et.)*
 
 ## Lær dette
 **Romlig indeks (GiST) og `ST_DWithin`.** Å finne "alle punkter innenfor 2300 m" ved å regne avstand til hver av 121 000 rader er tregt. En GiST-indeks (Generalized Search Tree) lagrer punktene som omsluttende bokser i et tre. `ST_DWithin(punkt, midt, 2300)` ber først indeksen om alle bokser som overlapper en boks 2300 m rundt midtpunktet (raskt, hopper over resten av byen), og regner så nøyaktig avstand bare for kandidatene. Funksjonen bruker bare indeksen når begge geometrier har samme koordinatsystem og avstanden er i systemets enhet; derfor lagres punktene i UTM (meter) og ikke i grader. Her ga indeksen også en overraskelse: uten å skille ut den romlige delen i en egen CTE valgte planleggeren å kombinere indeksen med en vanlig indeks på `ordning` og leste 108 000 rader. Se `EXPLAIN ANALYZE` hvis en romlig spørring plutselig blir treg.
