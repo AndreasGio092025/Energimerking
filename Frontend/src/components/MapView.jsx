@@ -351,7 +351,7 @@ function enhetPopupHtml(properties) {
     properties.energi_kwh_m2 !== null && Number.isFinite(energy)
       ? `${energy.toLocaleString("nb-NO", { maximumFractionDigits: 1 })} kWh/m² per år`
       : null;
-  const ordning = properties.ordning === "ny" ? "Ny ordning (fra 2026)" : "Gammel ordning (2025)";
+  const ordning = ordningLabel(properties.ordning);
   const samme = Number(properties.antall_enheter_samme_punkt);
   const heating =
     hasValue(properties.oppvarmingskarakter)

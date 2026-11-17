@@ -1,8 +1,9 @@
 import { buildUpgradeScores } from './filtering.js';
 
-// Ordningene i API-et ("gammel" / "ny") og teksten brukeren ser.
+// Ordningene i API-et ("gammel" / "ny") og teksten brukeren ser. Navnene står bare her;
+// skillet går på utstedelsesdato (før 2026-01-01 = gammel), se CLAUDE.md.
 export const ORDNINGER = [
-  { value: 'gammel', label: 'Gammel ordning (2025)' },
+  { value: 'gammel', label: 'Gammel ordning (før 2026)' },
   { value: 'ny', label: 'Ny ordning (fra 2026)' }
 ];
 
