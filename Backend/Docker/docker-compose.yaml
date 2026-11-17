@@ -1,8 +1,17 @@
 services:
   postgis:
-    image: postgis/postgis
+    # Låst til samme hovedversjon som databasen er testet på (PostgreSQL 17, PostGIS 3.5).
+    image: postgis/postgis:17-3.5
     container_name: energimerke-db
     restart: always
+    # «healthy» bare når init er ferdig: siste fil i db-init (09) lager mv_bygg_med_koordinater.
+    # Feilet init, blir containeren «unhealthy» (se README).
+    healthcheck:
+      test: ["CMD-SHELL", "psql -U $${POSTGRES_USER} -d $${POSTGRES_DB} -tAc \"SELECT 1 FROM pg_matviews WHERE matviewname = 'mv_bygg_med_koordinater'\" | grep -q 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15m
     # Verdiene leses fra .env i denne mappen (kopier .env.example til .env).
     environment:
       - POSTGRES_DB=${POSTGRES_DB:?Mangler .env, kopier .env.example til .env}

@@ -87,14 +87,21 @@ prosjekteieren om den.
    ```
 
 4. Første gang (tomt databasevolum) leser Postgres inn dumpen og kjører SQL-filene i
-   `db-init/` i navnerekkefølge. Det tar noen minutter. Følg med til den er klar:
+   `db-init/` i navnerekkefølge. Det tar et par minutter. Sjekk status:
 
    ```powershell
-   docker logs -f energimerke-db
+   docker ps --filter name=energimerke-db
    ```
 
-   Vent til siste linje er `database system is ready to accept connections` etter at init-skriptene er ferdige.
-   Mangler `grunndata.dump`, stopper oppstarten med en melding om det.
+   Databasen er klar når STATUS viser `(healthy)`. Viser den `(unhealthy)`, feilet oppbyggingen
+   (for eksempel fordi `grunndata.dump` mangler). Docker har da startet databasen på nytt, men
+   halvtom, og Postgres prøver ikke igjen av seg selv. Se feilen med `docker logs energimerke-db`,
+   rett den og bygg på nytt med `docker compose down -v` og `docker compose up -d`.
+
+Har du allerede en container som heter `energimerke-db` (for eksempel fra et eldre oppsett i en
+annen mappe), må den stoppes først, ellers kolliderer navn og porter. Compose-prosjektet heter
+`docker` (etter mappenavnet), så volumene heter `docker_postgis` osv. Finnes de fra før, bruker
+Postgres dem og bygger ingenting nytt.
 
 Dette starter:
 
@@ -105,7 +112,8 @@ Begge er bare tilgjengelige fra din egen maskin (`127.0.0.1`), ikke fra andre p�
 Brukernavn og passord står i `.env` (standardverdier i `.env.example`).
 
 Postgres leser `db-init/` og `.env` bare når databasevolumet er tomt. For å bygge databasen helt
-på nytt (sletter alle data i volumet):
+på nytt (sletter alle data i volumet til compose-prosjektet i mappen du står i; kjør det aldri i
+en mappe som eier en database du vil beholde, og ta en dump først):
 
 ```powershell
 docker compose down -v
@@ -120,7 +128,11 @@ Etter at du har lastet inn nye attester eller annen grunndata:
 
    ```powershell
    docker exec energimerke-db psql -U Kodehode -d Energimerking -c "SELECT refresh_enheter_kart();"
+   docker exec energimerke-db psql -U Kodehode -d Energimerking -c "REFRESH MATERIALIZED VIEW mv_bygg_med_koordinater;"
    ```
+
+   (Den andre gjør det samme som `POST api/bygg/refresh`.) Har du endret brukernavn eller
+   database i `.env`, bytt `Kodehode` og `Energimerking` i kommandoene.
 
 2. Lag en ny `grunndata.dump` og legg den på Google Drive i stedet for den gamle:
 
@@ -284,9 +296,9 @@ Bruk disse verdiene når du registrerer serveren i pgAdmin:
 ```text
 Host:     postgis
 Port:     5432
-Database: Energimerking
-Username: Kodehode
-Password: 12345
+Database: POSTGRES_DB fra .env
+Username: POSTGRES_USER fra .env
+Password: POSTGRES_PASSWORD fra .env
 ```
 
 Når du kobler fra maskinen utenfor Docker-nettverket, bruk `localhost` som host.

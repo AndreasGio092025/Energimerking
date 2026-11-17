@@ -71,6 +71,7 @@ Når du er ferdig, lag én fil `docs/logg/ÅÅÅÅ-MM-DD-<agent>-<kort-tema>.md`
 Store beslutninger (datamodell, faglige tolkninger, valg som er dyre å endre) skrives også i `docs/beslutninger.md`.
 
 ## Kjente åpne punkter
+- Live-databasen (`energimerke-db`) kjører fra `Documents\DockerEnergimerke`, ikke fra repoets `Backend/Docker`, og lytter fortsatt på `0.0.0.0`. Sett portene til `127.0.0.1` der (ta dump først, aldri `down -v`), eller flytt live til repoets compose som egen jobb.
 - `WebApi.csproj` har `Microsoft.NET.Sdk.web` (liten w); må være `Web` for Linux.
 - `energimerke.oppvarmingskarakter` er NOT NULL og blokkerer import av 2026-attester.
 - «Enkel bygg» (vektor-tiles) viser én prikk per attest, ikke per enhet.

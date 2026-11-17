@@ -9,10 +9,12 @@
 #
 # Hvorfor feil hvis fila mangler: uten grunndata ville de neste skriptene feile med uforståelige
 # meldinger om tabeller som ikke finnes, eller (verre) gi en tom database som ser ok ut.
-# Dette skriptet stopper hele oppstarten tidlig, med beskjed om hva som må gjøres.
+# Dette skriptet stopper init tidlig, med beskjed om hva som må gjøres.
 #
-# Postgres kjører filene i /docker-entrypoint-initdb.d bare når datavolumet er tomt.
-# Skal du bygge på nytt: stopp containeren, slett datavolumet og start igjen.
+# Postgres kjører filene i /docker-entrypoint-initdb.d bare når datavolumet er tomt. Feiler init,
+# starter Docker containeren på nytt (restart: always) UTEN å kjøre init igjen, og databasen er da
+# halvtom. Healthcheck i docker-compose.yaml viser den som «unhealthy». Rett feilen, kjør
+# `docker compose down -v` og start på nytt (se README).
 
 set -euo pipefail
 

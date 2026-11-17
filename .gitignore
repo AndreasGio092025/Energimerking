@@ -483,8 +483,9 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
-# Databasedump med grunndata deles direkte, ikke via Git
-Backend/Docker/Data/*.dump
+# Grunndata (dump, CSV o.l.) deles direkte, ikke via Git. Bare .gitkeep holder mappen i repoet.
+Backend/Docker/Data/*
+!Backend/Docker/Data/.gitkeep
 
 # Claude Code: automatisk agentlogg
 docs/logg/aktivitet.log
