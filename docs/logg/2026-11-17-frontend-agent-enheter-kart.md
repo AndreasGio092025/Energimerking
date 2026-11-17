@@ -19,7 +19,7 @@
 **Testet:**
 - `npx vite build --outDir <midlertidig mappe>` går uten feil (bare vanlig advarsel om stor fil).
 - `npm run dev` med `?eksempel=enheter` i Claudes nettleserpanel: klynger, ordningsvalg gammel/ny (563 mot 159 enheter i Gamle Oslo), statistikkpanel (alle felt, «37 enheter ... ikke kartpunkt»), popup for enkeltpunkt med «Vis bygget» (`#/bygg/117431375`), punkt med flere enheter (liste, og «4 enheter her» etter valg), radius-søk (30 enheter innen 500 m), melding om avkortet (`enheter-avkortet`), Oppgraderingsprioritet (laster gammel ordning selv om «ny» er valgt), og 375 px bredde (panelet og statistikken). Skjermbildene ble sett i panelet; ingen filer lagret.
-- **Ikke testet mot ekte API.** Rutene fantes ikke ennå. Formen på svaret er bare sjekket mot kontrakten og mine egne testdata.
+- **Ikke testet mot ekte API.** Rutene fantes ikke ennå. Formen på svaret er bare sjekket mot kontrakten og mine egne testdata. *(Senere gjort av hovedsesjonen: testet i nettleseren mot ekte API; panelet stemmer med API-et, ordningsvalg og popup virker.)*
 - Ikke testet: varmekart-visning med testdata, «Enkel bygg» etter endringen (koden er urørt, men ikke åpnet), bygg-siden og utskrift (urørt), mørkt tema.
 
 **Usikkert:**

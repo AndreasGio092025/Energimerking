@@ -77,7 +77,5 @@ Store beslutninger (datamodell, faglige tolkninger, valg som er dyre å endre) s
 - «Enkel bygg» (vektor-tiles) viser én prikk per attest, ikke per enhet.
 - **Etter «enheter i kartet» (reviewer 2026-11-17, eieren: ta når det trengs eller minn eieren på det):**
   - `Frontend/src/dev/enheter-eksempel.js` (`kohortFor`) har egne kohortgrenser i nettleserkoden; bytt til faste kohort-tekster uten årsgrenser.
-  - Ugyldig tall (`lat=abc`) i `api/enheter` gir engelsk ProblemDetails fra ASP.NET.
-  - `docs/logg/2026-11-17-sql-agent-enheter-kart.md` har utdaterte stikkprøver (riktig: 21 151 enheter, 25 016 attester, 1 900 bygg i Gamle Oslo), og frontend-rapporten sier «ikke testet mot ekte API» (det er gjort).
   - `Sidebar.jsx` sier «Søker etter bygg nær stedet …», men søket gir enheter.
   - I Oppgraderingsprioritet viser kartet alltid gammel ordning og skjuler ordningsvalget; filterteksten nevner «statistikken», som ikke vises der.
