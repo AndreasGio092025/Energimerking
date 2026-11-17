@@ -1,3 +1,6 @@
+-- HISTORISK. Dette er det gamle skjemaet (med feil: store bokstaver, "KOMMUNE" osv.).
+-- Filen kjøres IKKE. Databasen bygges av Backend/Docker/db-init/ (00-09) og grunndata.dump.
+-- Beholdt bare som referanse.
 
 CREATE TABLE "KOMMUNE" (
   "Kommunenummer" varchar(4) PRIMARY KEY,

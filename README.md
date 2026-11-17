@@ -68,38 +68,80 @@ Kjør kommandoene fra rotmappen i repoet hvis ikke annet er oppgitt.
 
 ### 1. Start database
 
-```powershell
-cd Backend\Docker
-docker compose up -d
-```
+Databasen bygges fra filene i `Backend/Docker/db-init/` pluss én datafil, `grunndata.dump`.
+Datafila ligger **ikke** i Git (den er stor og deles direkte, f.eks. via Google Drive). Spør
+prosjekteieren om den.
+
+1. Legg `grunndata.dump` i `Backend/Docker/Data/`.
+2. Lag din egen `.env` med brukernavn og passord (fila ligger ikke i Git):
+
+   ```powershell
+   cd Backend\Docker
+   Copy-Item .env.example .env
+   ```
+
+3. Start databasen:
+
+   ```powershell
+   docker compose up -d
+   ```
+
+4. Første gang (tomt databasevolum) leser Postgres inn dumpen og kjører SQL-filene i
+   `db-init/` i navnerekkefølge. Det tar et par minutter. Sjekk status:
+
+   ```powershell
+   docker ps --filter name=energimerke-db
+   ```
+
+   Databasen er klar når STATUS viser `(healthy)`. Viser den `(unhealthy)`, feilet oppbyggingen
+   (for eksempel fordi `grunndata.dump` mangler). Docker har da startet databasen på nytt, men
+   halvtom, og Postgres prøver ikke igjen av seg selv. Se feilen med `docker logs energimerke-db`,
+   rett den og bygg på nytt med `docker compose down -v` og `docker compose up -d`.
+
+Har du allerede en container som heter `energimerke-db` (for eksempel fra et eldre oppsett i en
+annen mappe), må den stoppes først, ellers kolliderer navn og porter. Compose-prosjektet heter
+`docker` (etter mappenavnet), så volumene heter `docker_postgis` osv. Finnes de fra før, bruker
+Postgres dem og bygger ingenting nytt.
 
 Dette starter:
 
 - PostgreSQL/PostGIS på `localhost:5432`
 - pgAdmin på `http://localhost:8080`
 
-Standard databaseoppsett i `docker-compose.yaml`:
+Begge er bare tilgjengelige fra din egen maskin (`127.0.0.1`), ikke fra andre på nettverket.
+Brukernavn og passord står i `.env` (standardverdier i `.env.example`).
 
-```text
-Database: Energimerking
-User:     Kodehode
-Password: 12345
+Postgres leser `db-init/` og `.env` bare når databasevolumet er tomt. For å bygge databasen helt
+på nytt (sletter alle data i volumet til compose-prosjektet i mappen du står i; kjør det aldri i
+en mappe som eier en database du vil beholde, og ta en dump først):
+
+```powershell
+docker compose down -v
+docker compose up -d
 ```
 
-pgAdmin-login:
+### Ny import av data
 
-```text
-Email:    admin@example.com
-Password: securepassword
-```
+Etter at du har lastet inn nye attester eller annen grunndata:
 
-Merk: `Backend/Docker/db-init/Energimerking.sql` ligger i repoet, men compose-filen bruker per nå et navngitt Docker-volum for `/docker-entrypoint-initdb.d`. Det betyr at SQL-filen ikke nødvendigvis kjøres automatisk ved første oppstart. Hvis databasen er tom, importer SQL-filen manuelt i databasen eller endre volumet i compose-filen til en bind mount, for eksempel:
+1. Oppdater kart og statistikk (ellers viser appen forrige import):
 
-```yaml
-- ./db-init:/docker-entrypoint-initdb.d
-```
+   ```powershell
+   docker exec energimerke-db psql -U Kodehode -d Energimerking -c "SELECT refresh_enheter_kart();"
+   docker exec energimerke-db psql -U Kodehode -d Energimerking -c "REFRESH MATERIALIZED VIEW mv_bygg_med_koordinater;"
+   ```
 
-Dette må gjøres før første databaseoppstart, eller etter at databasevolumet er slettet.
+   (Den andre gjør det samme som `POST api/bygg/refresh`.) Har du endret brukernavn eller
+   database i `.env`, bytt `Kodehode` og `Energimerking` i kommandoene.
+
+2. Lag en ny `grunndata.dump` og legg den på Google Drive i stedet for den gamle:
+
+   ```powershell
+   docker exec energimerke-db pg_dump -U Kodehode -d Energimerking -Fc --no-owner --no-privileges -t public.bygning -t public.coordinates -t public.coordinates_raw -t public.denorm_matrikkel_og_enova_oslo -t public.eiendom -t public.eiendom_bygning -t public.energiattester -t public.energikarakter -t public.energimerke -t public.enova_raw -t public.kommune -t public.oppvarmingskarakter -f /tmp/grunndata.dump
+   docker cp energimerke-db:/tmp/grunndata.dump Backend\Docker\Data\grunndata.dump
+   ```
+
+   Kjør den andre kommandoen fra rotmappen i repoet.
 
 ### 2. Start backend
 
@@ -197,7 +239,11 @@ VITE_PORT
 VITE_API_PROXY_TARGET
 VITE_HMR_HOST
 VITE_HMR_CLIENT_PORT
+VITE_ALLOWED_HOSTS
 ```
+
+Vite lytter bare på `localhost` som standard. Sett `VITE_HOST=0.0.0.0` for å åpne for andre på
+nettverket, og `VITE_ALLOWED_HOSTS` (kommaseparert) for ekstra vertsnavn, f.eks. en Cloudflare-tunnel.
 
 ## Bygg
 
@@ -250,9 +296,9 @@ Bruk disse verdiene når du registrerer serveren i pgAdmin:
 ```text
 Host:     postgis
 Port:     5432
-Database: Energimerking
-Username: Kodehode
-Password: 12345
+Database: POSTGRES_DB fra .env
+Username: POSTGRES_USER fra .env
+Password: POSTGRES_PASSWORD fra .env
 ```
 
 Når du kobler fra maskinen utenfor Docker-nettverket, bruk `localhost` som host.

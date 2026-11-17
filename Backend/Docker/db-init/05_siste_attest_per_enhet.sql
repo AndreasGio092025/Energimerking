@@ -11,7 +11,15 @@
 -- Hvorfor materialisert: v_attester slår sammen 126k + 18k rader og slår opp i enova_raw
 -- (277k rader). Det vil vi ikke gjøre ved hver forespørsel. Oppdater etter ny import:
 --   REFRESH MATERIALIZED VIEW mv_siste_attest_per_enhet;
--- Kan kjøres på nytt: DROP gjelder bare vårt eget objekt.
+-- Rekkefølge og kjøring på nytt: 05 må kjøres før 07 og 08, som bygger på dette viewet.
+-- Mot en tom database går det av seg selv (00-09 kjøres i navnerekkefølge ved første oppstart).
+-- Mot en database der 07 og 08 allerede er installert FEILER DROP nedenfor (uten CASCADE), fordi
+-- mv_lignende_fordeling, mv_lignende_enheter og mv_enhet_punkt (og mv_enhet_punkt_oversikt under
+-- den) er bygget på viewet. Da må de droppes først:
+--   DROP MATERIALIZED VIEW IF EXISTS mv_enhet_punkt_oversikt, mv_enhet_punkt,
+--       mv_lignende_enheter, mv_lignende_fordeling;
+-- og deretter kjøres 05, 07 og 08 på nytt i den rekkefølgen. (07 og 08 dropper og bygger sine
+-- egne views selv.) Funksjonene i 07/08 er uberørt av DROP og lages på nytt av filene.
 
 DROP MATERIALIZED VIEW IF EXISTS mv_siste_attest_per_enhet;
 
