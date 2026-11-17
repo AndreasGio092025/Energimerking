@@ -8,6 +8,8 @@ const CELLE_LON = 0.0032;
 const KATEGORIER = ['Boligblokker', 'Småhus', 'Kontorbygg', 'Barnehager'];
 const FARGER = ['Green', 'LightGreen', 'Yellow', 'Orange', 'Red'];
 const KARAKTERER = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+// Kohort-tekstene står ferdige, slik API-et leverer dem fra byggeaar_kohort() i SQL.
+// Nettleseren regner ikke ut grenser: hver eksempelrad trekker bare en av tekstene.
 const KOHORTER = ['før 1949', '1949–1969', '1970–1986', '1987–1996', '1997–2006', '2007–2016', '2017 og senere'];
 
 // Enkel, fast tilfeldighet slik at samme sted gir samme punkter hver gang.
@@ -15,17 +17,6 @@ function hash(a, b, c) {
   let h = (a * 374761393 + b * 668265263 + c * 2147483647) | 0;
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-}
-
-function kohortFor(byggeaar) {
-  if (byggeaar === null) return null;
-  if (byggeaar < 1949) return KOHORTER[0];
-  if (byggeaar < 1970) return KOHORTER[1];
-  if (byggeaar < 1987) return KOHORTER[2];
-  if (byggeaar < 1997) return KOHORTER[3];
-  if (byggeaar < 2007) return KOHORTER[4];
-  if (byggeaar < 2017) return KOHORTER[5];
-  return KOHORTER[6];
 }
 
 function meterFra(lat, lon, lat2, lon2) {
@@ -51,6 +42,8 @@ function lagEnheter(ordning) {
       const kategori = KATEGORIER[Math.floor(hash(i, j, 4) * KATEGORIER.length)];
       const harByggeaar = hash(i, j, 5) > 0.06;
       const byggeaar = harByggeaar ? 1900 + Math.floor(hash(i, j, 6) * 123) : null;
+      // Eksempeldata: kohort-teksten trekkes for seg og er ikke utledet av byggeåret. Uten byggeår er den null.
+      const kohort = harByggeaar ? KOHORTER[Math.floor(hash(i, j, 14) * KOHORTER.length)] : null;
       const antallSamme = kategori === 'Boligblokker' ? 1 + Math.floor(hash(i, j, 7) * 6) : 1;
       const husnr = 1 + Math.floor(hash(i, j, 8) * 90);
 
@@ -72,7 +65,7 @@ function lagEnheter(ordning) {
           adresse: `Eksempelveien ${husnr}${String.fromCharCode(65 + k)}`,
           bygningskategori: kategori,
           byggeaar,
-          kohort: kohortFor(byggeaar),
+          kohort,
           energikarakter: KARAKTERER[karakterIndeks],
           oppvarmingskarakter: ordning === 'ny' ? null : FARGER[Math.floor(hash(seed, 13, 1) * FARGER.length)],
           energi_kwh_m2: energi,
