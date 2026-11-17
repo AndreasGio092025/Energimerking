@@ -616,7 +616,11 @@ function Filters() {
           inert={!filtersOpen}
         >
           <div className="filters-fields">
-            <div className="bydel-stat-note">Filtrene gjelder punktene i kartet. De endrer ikke tallene i statistikken.</div>
+            <div className="bydel-stat-note">
+              {viewMode === 'upgrade'
+                ? `Filtrene gjelder punktene i kartet. Kartet viser ${ordningLabel('gammel').toLowerCase()} i denne visningen.`
+                : 'Filtrene gjelder punktene i kartet. De endrer ikke tallene i statistikken.'}
+            </div>
             <RangeField
               label="Byggeår"
               min={filterBounds.byggeaar[0]}
@@ -636,7 +640,7 @@ function Filters() {
             <div className="filter-group radius-control">
               <div className="filter-label-row">
                 <label htmlFor="radius-range">
-                  <HelpLabel tooltip="Radius styrer hvor langt fra punktet du klikker i kartet appen søker etter bygg i nærheten. Slå på radius, velg en avstand her og klikk deretter i kartet.">
+                  <HelpLabel tooltip="Radius styrer hvor langt fra punktet du klikker i kartet appen søker etter enheter i nærheten. Slå på radius, velg en avstand her og klikk deretter i kartet.">
                     Radius
                   </HelpLabel>
                 </label>

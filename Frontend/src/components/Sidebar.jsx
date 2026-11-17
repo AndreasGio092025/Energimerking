@@ -44,8 +44,8 @@ function Sidebar({ isSearchingNearby }) {
               className={`tool-button radius-tool ${nearbySearchEnabled ? "active" : ""}`}
               onClick={toggleNearbySearch}
               aria-pressed={nearbySearchEnabled}
-              aria-label="Slå søk i radius av eller på. Når det er på, klikker du i kartet for å søke etter bygg innenfor valgt radius."
-              title="Slå søk i radius av eller på. Når det er på, klikker du i kartet for å søke etter bygg innenfor valgt radius."
+              aria-label="Slå søk i radius av eller på. Når det er på, klikker du i kartet for å søke etter enheter innenfor valgt radius."
+              title="Slå søk i radius av eller på. Når det er på, klikker du i kartet for å søke etter enheter innenfor valgt radius."
             >
               <span className="tool-copy">
                 <span className="tool-label">
@@ -97,7 +97,7 @@ function Sidebar({ isSearchingNearby }) {
 
             {isSearchingNearby && (
               <div className="sidebar-alert">
-                Søker etter bygg nær stedet du klikket på i kartet.
+                Søker etter enheter nær stedet du klikket på i kartet.
               </div>
             )}
           </div>

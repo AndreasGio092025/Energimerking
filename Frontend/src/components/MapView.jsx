@@ -2298,7 +2298,7 @@ function MapView({
         {isSearchingNearby && (
           <div className="map-pill is-loading">
             <span className="map-pill-loader" aria-hidden="true" />
-            Finner bygg i nærheten innenfor {radiusInMeters.toLocaleString()}{" "}
+            Finner enheter i nærheten innenfor {radiusInMeters.toLocaleString()}{" "}
             m …
           </div>
         )}
