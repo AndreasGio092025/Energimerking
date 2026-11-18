@@ -5,26 +5,58 @@ export function buildFeatureCollection(features) {
   };
 }
 
+export function groupNearbyResultsByCoordinate(results) {
+  const grouped = new Map();
+  
+  results.forEach((item) => {
+    const key = `${item.longitude.toFixed(5)}-${item.latitude.toFixed(5)}`;
+    if (!grouped.has(key)) {
+      grouped.set(key, []);
+    }
+    grouped.get(key).push(item);
+  });
+  
+  return grouped;
+}
+
 export function buildNearbyGeoJson(results) {
-  const features = results
-    .filter(
-      (item) =>
+  const grouped = groupNearbyResultsByCoordinate(results);
+  const features = Array.from(grouped.values())
+    .filter((group) => {
+      const item = group[0];
+      return (
         item &&
-        Number.isFinite(Number(item.longitude)) &&
-        Number.isFinite(Number(item.latitude))
-    )
-    .map((item) => ({
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [Number(item.longitude), Number(item.latitude)]
-      },
-      properties: {
-        coordinateid: item.coordinateid,
-        latitude: Number(item.latitude).toFixed(5),
-        longitude: Number(item.longitude).toFixed(5)
-      }
-    }));
+        Number.isFinite(Number(item.longitude ?? item.Longitude)) &&
+        Number.isFinite(Number(item.latitude ?? item.Latitude))
+      );
+    })
+    .map((group) => {
+      const item = group[0];
+      const longitude = Number(item.longitude ?? item.Longitude);
+      const latitude = Number(item.latitude ?? item.Latitude);
+
+      return {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [longitude, latitude]
+        },
+        properties: {
+          coordinateid: item.coordinateid ?? item.Coordinateid ?? item.CoordinateId,
+          latitude: latitude.toFixed(5),
+          longitude: longitude.toFixed(5),
+          unitCount: group.length,
+          units: JSON.stringify(
+            group.map((u) => ({
+              id: u.coordinateid ?? u.Coordinateid ?? u.CoordinateId,
+              bruksenhetsNr: u.bruksenhetsNr || u.brukenhetsnummer || '',
+              energikarakter: u.energikarakter || u.Energikarakter || '',
+              distanceInMeters: u.distanceInMeters
+            }))
+          )
+        }
+      };
+    });
 
   return buildFeatureCollection(features);
 }

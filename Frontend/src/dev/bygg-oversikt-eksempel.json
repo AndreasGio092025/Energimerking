@@ -1,0 +1,52 @@
+{
+  "bygningsnummer": "80000000",
+  "adresser": ["Eksempelveien 1A", "Eksempelveien 1B", "Eksempelveien 1C"],
+  "bygningskategori": "Boligblokker",
+  "byggeaar": 1962,
+  "kohort": "1949–1969",
+  "minimum_lignende": 10,
+  "ordninger": [
+    {
+      "ordning": "gammel",
+      "periode": "attester utstedt i 2025",
+      "antall_enheter": 24,
+      "antall_attester": 27,
+      "karakterfordeling": { "A": 0, "B": 1, "C": 5, "D": 9, "E": 6, "F": 2, "G": 1 },
+      "median_kwh_m2": 168.4,
+      "oppvarmingsfordeling": { "Green": 2, "LightGreen": 4, "Yellow": 9, "Orange": 7, "Red": 2 },
+      "lignende": {
+        "grunnlag": "kategori og byggeår",
+        "antall_enheter": 1480,
+        "antall_bygg": 62,
+        "nok_data": true,
+        "karakterfordeling": { "A": 0.01, "B": 0.05, "C": 0.17, "D": 0.34, "E": 0.25, "F": 0.12, "G": 0.06 },
+        "median_kwh_m2": 181.2,
+        "andel_med_hoyere_energibruk": 0.7,
+        "andel_enheter_bedre_enn_lignende": 0.6,
+        "antall_enheter_bedre_enn_lignende": 14,
+        "antall_enheter_med_energitall": 23
+      }
+    },
+    {
+      "ordning": "ny",
+      "periode": "attester utstedt i 2026",
+      "antall_enheter": 6,
+      "antall_attester": 6,
+      "karakterfordeling": { "A": 0, "B": 0, "C": 2, "D": 3, "E": 1, "F": 0, "G": 0 },
+      "median_kwh_m2": 152.0,
+      "oppvarmingsfordeling": null,
+      "lignende": {
+        "grunnlag": "bare kategori",
+        "antall_enheter": 4,
+        "antall_bygg": 2,
+        "nok_data": false,
+        "karakterfordeling": null,
+        "median_kwh_m2": null,
+        "andel_med_hoyere_energibruk": null,
+        "andel_enheter_bedre_enn_lignende": null,
+        "antall_enheter_bedre_enn_lignende": null,
+        "antall_enheter_med_energitall": null
+      }
+    }
+  ]
+}

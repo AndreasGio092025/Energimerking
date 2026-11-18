@@ -1,4 +1,6 @@
-﻿using System;
+﻿
+/*whole file is commented
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
@@ -378,3 +380,4 @@ public partial class EnergimerkingContext : DbContext
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }
+*/

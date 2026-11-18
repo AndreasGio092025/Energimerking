@@ -6,6 +6,7 @@ using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using NetTopologySuite;
 using Coordinate = Core.Models.Coordinate;
+using EnergimerkingContext = Core.DbContexts.EnergimerkingContext;
 
 namespace WebApi.Controllers
 {
@@ -15,13 +16,22 @@ namespace WebApi.Controllers
     {
         private readonly EnergimerkingContext _context;
         private readonly EnergimerkingService _service;
-        private ILogger<EnergimerkingContext> _logger;
+        private readonly ILogger<ByggController> _logger;
+        // Sender aldri unntaksteksten til klienten: den kan inneholde detaljer om database og tilkobling.
+        // Feilen logges i stedet, og brukeren får en kort norsk melding.
+        private ObjectResult Feil(Exception ex, [System.Runtime.CompilerServices.CallerMemberName] string rute = "")
+        {
+            _logger.LogError(ex, "Feil i {Rute}", rute);
+            return StatusCode(500, "Noe gikk galt på serveren. Prøv igjen senere.");
+        }
+
 
         //Om det dukker opp feil se på constructoren. 
-        public ByggController(EnergimerkingContext context, EnergimerkingService service)
+        public ByggController(EnergimerkingContext context, EnergimerkingService service, ILogger<ByggController> logger)
         {
             _context = context;
             _service = service;
+            _logger = logger;
         }
         /// <summary>
         /// IKKE FERDIG
@@ -43,8 +53,7 @@ namespace WebApi.Controllers
             return Ok(jsonString);
         }
         
-        
-        [HttpGet("geojson")]
+        /*[HttpGet("geojson")]
         public async Task<IActionResult> GetGeoJson(int limit = 8000)
         {
             var data = await _context.VByggMedKoordinaters
@@ -99,10 +108,10 @@ namespace WebApi.Controllers
             };
 
             return Ok(geoJson);
-        }
+        }*/
 
        
-        [HttpGet("nearby/geojson=r:{radiusInMeters}amount:{amount}lat:{latitude}lon:{longitude}")]
+        [HttpGet("nearby/geojson")]
         public async Task<IActionResult> GetNearbyGeoJson(
             double latitude,
             double longitude,
@@ -113,7 +122,6 @@ namespace WebApi.Controllers
             {
                 return BadRequest("Radius må være mellom 1 og 50 000 meter.");
             }
-
             try
             {
                 /*var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4258);
@@ -144,7 +152,7 @@ namespace WebApi.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Feil ved søk: {ex.Message}");
+                return Feil(ex);
             }
         }
         
@@ -184,11 +192,11 @@ namespace WebApi.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Feil ved søk: {ex.Message}");
+                return Feil(ex);
             }
         }
         
-        [HttpGet("getamount_geojson")]
+        /*[HttpGet("getamount_geojson")]
         public async Task<IActionResult> GetAmountGeojson(int amount)
         {
             string jsonString = null;
@@ -202,11 +210,10 @@ namespace WebApi.Controllers
             }
             catch(Exception ex)
             {
-                //_logger.LogError(ex.Message);
-                return StatusCode(500, ex.Message);
+                                return Feil(ex);
             }
             return Ok(jsonString);
-        }
+        }*/
 
         //laget view får ikke koblet til gir 500 error
         [HttpPost("refresh")]
@@ -221,7 +228,241 @@ namespace WebApi.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Feil ved oppdatering: {ex.Message}");
+                return Feil(ex);
+            }
+        }
+        /// <summary>
+        /// Henter gitt mengde med denormaliserte energi-attester sammen med koordinater innenfor
+        /// spesifisert radius i meter.(DenormMatrikkelOgEnovaOslo blir hentet)
+        /// Blir ikke gjort om til geojson enda.
+        /// </summary>
+        /// <param name="latitude"></param>
+        /// <param name="longitude"></param>
+        /// <param name="radiusInMeters"></param>
+        /// <param name="amount"></param>
+        /// <returns></returns>
+        [HttpGet("GetNearbyDeNormDynamicList")]
+        public async Task<IActionResult> GetNearbyDeNormDynamicList(
+            double latitude = 59.9,
+            double longitude = 10.8,
+            double radiusInMeters = 2500,
+            int amount = 10 
+        )
+        {
+            try
+            {
+                var sumStuff = await _service.GetNearbyDeNormDynamicList(latitude, longitude, amount, radiusInMeters);
+
+                return Ok(sumStuff);
+            } catch (Exception ex)
+            {
+                return Feil(ex);
+            }
+        }
+        /// <summary>
+        /// Henter gitt mengde med denormaliserte energi-attester og eiendommer sammen med koordinater innenfor
+        /// spesifisert radius i meter og gjøres om til geojson.(DenormMatrikkelOgEnovaOslo blir hentet)
+        /// </summary>
+        /// <param name="latitude"></param>
+        /// <param name="longitude"></param>
+        /// <param name="radiusInMeters"></param>
+        /// <param name="amount"></param>
+        /// <param name="onlyNew">Om du bare vil ha den nyeste attesten per eiendom.</param>
+        /// <returns>Liste av DenormMatrikkelOgEnovaOslo i geojson</returns>
+        [HttpGet("GetNearbyDeNormGeoJson")]
+        public async Task<IActionResult> GetNearbyDeNormGeoJson(
+            double latitude = 59.9,
+            double longitude = 10.8,
+            double radiusInMeters = 2500,
+            int amount = 10,
+            bool onlyNew = false,
+            int skip = 0
+        )
+        {
+            if (radiusInMeters <= 0 || radiusInMeters > 50000)
+            {
+                return BadRequest("Radius må være mellom 1 og 50 000 meter.");
+            }
+            if (amount <= 0)
+            {
+                return BadRequest("amount må være større enn 0.");
+            }
+            if (skip < 0)
+            {
+                return BadRequest("skip kan ikke være negativ.");
+            }
+            try
+            {
+                var sumStuff = await _service.GetNearbyDeNormGeoJson(latitude, longitude, amount, radiusInMeters, onlyNew, skip);
+
+                return Ok(sumStuff);
+            } catch (Exception ex)
+            {
+                return Feil(ex);
+            }
+        }
+
+        [HttpGet("GetBoundsDeNormGeoJson")]
+        public async Task<IActionResult> GetBoundsDeNormGeoJson(
+            double minLatitude,
+            double minLongitude,
+            double maxLatitude,
+            double maxLongitude,
+            int amount = 10,
+            bool onlyNew = false,
+            int skip = 0
+        )
+        {
+            if (minLatitude < -90 || minLatitude > 90 || maxLatitude < -90 || maxLatitude > 90)
+            {
+                return BadRequest("latitude må være mellom -90 og 90.");
+            }
+            if (minLongitude < -180 || minLongitude > 180 || maxLongitude < -180 || maxLongitude > 180)
+            {
+                return BadRequest("longitude må være mellom -180 og 180.");
+            }
+            if (amount <= 0)
+            {
+                return BadRequest("amount må være større enn 0.");
+            }
+            if (skip < 0)
+            {
+                return BadRequest("skip kan ikke være negativ.");
+            }
+
+            try
+            {
+                var sumStuff = await _service.GetBoundsDeNormGeoJson(
+                    minLatitude,
+                    minLongitude,
+                    maxLatitude,
+                    maxLongitude,
+                    amount,
+                    onlyNew,
+                    skip);
+
+                return Ok(sumStuff);
+            } catch (Exception ex)
+            {
+                return Feil(ex);
+            }
+        }
+
+        [HttpGet("GetBoundsTilePoints")]
+        public async Task<IActionResult> GetBoundsTilePoints(
+            double minLatitude,
+            double minLongitude,
+            double maxLatitude,
+            double maxLongitude,
+            int limit = 2000,
+            double? cursorLat = null,
+            double? cursorLon = null,
+            int? cursorId = null
+        )
+        {
+            if (minLatitude < -90 || minLatitude > 90 || maxLatitude < -90 || maxLatitude > 90)
+            {
+                return BadRequest("latitude må være mellom -90 og 90.");
+            }
+            if (minLongitude < -180 || minLongitude > 180 || maxLongitude < -180 || maxLongitude > 180)
+            {
+                return BadRequest("longitude må være mellom -180 og 180.");
+            }
+            if (limit <= 0 || limit > 5000)
+            {
+                return BadRequest("limit må være mellom 1 og 5000.");
+            }
+
+            var hasAnyCursor = cursorLat.HasValue || cursorLon.HasValue || cursorId.HasValue;
+            var hasFullCursor = cursorLat.HasValue && cursorLon.HasValue && cursorId.HasValue;
+            if (hasAnyCursor && !hasFullCursor)
+            {
+                return BadRequest("cursorLat, cursorLon og cursorId må oppgis sammen.");
+            }
+            if (cursorLat is < -90 or > 90)
+            {
+                return BadRequest("cursorLat må være mellom -90 og 90.");
+            }
+            if (cursorLon is < -180 or > 180)
+            {
+                return BadRequest("cursorLon må være mellom -180 og 180.");
+            }
+            if (cursorId is <= 0)
+            {
+                return BadRequest("cursorId må være større enn 0.");
+            }
+
+            try
+            {
+                var result = await _service.GetBoundsTilePoints(
+                    minLatitude,
+                    minLongitude,
+                    maxLatitude,
+                    maxLongitude,
+                    limit,
+                    cursorLat,
+                    cursorLon,
+                    cursorId);
+
+                return Ok(result);
+            } catch (Exception ex)
+            {
+                return Feil(ex);
+            }
+        }
+
+        [HttpGet("GetTilePointDetails")]
+        public async Task<IActionResult> GetTilePointDetails(int id)
+        {
+            if (id <= 0)
+            {
+                return BadRequest("id må være større enn 0.");
+            }
+
+            try
+            {
+                var result = await _service.GetTilePointDetails(id);
+
+                if (result == null)
+                {
+                    return NotFound("Fant ikke punktet.");
+                }
+
+                return Ok(result);
+            } catch (Exception ex)
+            {
+                return Feil(ex);
+            }
+        }
+        /// <summary>
+        /// Dette er bare ett leke-endepunkt.
+        /// </summary>
+        /// <param name="latitude"></param>
+        /// <param name="longitude"></param>
+        /// <param name="radiusInMeters"></param>
+        /// <param name="amount"></param>
+        /// <returns></returns>
+        [HttpGet("get_sum")]
+        public async Task<IActionResult> getSumTest(
+            double latitude = 59.9,
+            double longitude = 10.8,
+            double radiusInMeters = 2500,
+            int amount = 10,
+            bool onlyNew = false
+            )
+        {
+            if (radiusInMeters <= 0 || radiusInMeters > 50000)
+            {
+                return BadRequest("Radius må være mellom 1 og 50 000 meter.");
+            }
+            try
+            {
+                var sumStuff = await _service.GetNearbyDeNormGeoJson(latitude, longitude, amount, radiusInMeters,onlyNew);
+
+                return Ok(sumStuff);
+            } catch (Exception ex)
+            {
+                return Feil(ex);
             }
         }
     }

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 const defaultBounds = {
   byggeaar: [1900, 2026],
-  energibruk_kwh_m2: [0, 500]
+  energibruk_kwh_m2: [0, 2000]
 };
 
 export const useStore = create((set) => ({
@@ -11,6 +11,12 @@ export const useStore = create((set) => ({
   isLoading: false,
   error: '',
   viewMode: 'markers',
+  bydelDisplayMode: 'clusters',
+  ordning: 'gammel',
+  punktInfo: { avkortet: false, antall: 0 },
+  selectedBydelId: 'gamle-oslo',
+  nearbySearchEnabled: false,
+  radiusInMeters: 5000,
   searchQuery: '',
   allFeatures: [],
   selectedFeature: null,
@@ -23,8 +29,9 @@ export const useStore = create((set) => ({
   filters: {
     byggeaar: defaultBounds.byggeaar,
     energibruk_kwh_m2: defaultBounds.energibruk_kwh_m2,
-    energikarakter: 'all',
-    oppvarmingskarakter: 'all'
+    energikarakter: [],
+    oppvarmingskarakter: 'all',
+    certificateScheme: 'all'
   },
   toggleTheme: () =>
     set((state) => ({
@@ -39,24 +46,59 @@ export const useStore = create((set) => ({
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   setAllFeatures: (allFeatures) => set({ allFeatures }),
   setSelectedFeature: (selectedFeature) => set({ selectedFeature }),
-  setViewMode: (viewMode) => set({ viewMode }),
-  setNearby: (nearby) => set({ nearby }),
-  clearNearby: () =>
-    set({
+  setViewMode: (viewMode) =>
+    set(() => (
+      viewMode === 'heatmap'
+        ? { viewMode: 'markers', bydelDisplayMode: 'heatmap' }
+        : { viewMode }
+    )),
+  setBydelDisplayMode: (bydelDisplayMode) => set({ bydelDisplayMode }),
+  setOrdning: (ordning) => set({ ordning, selectedFeature: null }),
+  setPunktInfo: (punktInfo) => set({ punktInfo }),
+  setSelectedBydelId: (selectedBydelId) => set({ selectedBydelId, selectedFeature: null }),
+  toggleNearbySearch: () =>
+    set((state) => {
+      const nearbySearchEnabled = !state.nearbySearchEnabled;
+
+      return {
+        nearbySearchEnabled,
+        nearby: nearbySearchEnabled
+          ? state.nearby
+          : {
+              center: null,
+              radiusInMeters: state.radiusInMeters,
+              results: []
+            }
+      };
+    }),
+  setNearbySearchEnabled: (nearbySearchEnabled) => set({ nearbySearchEnabled }),
+  setRadiusInMeters: (radiusInMeters) =>
+    set(() => ({
+      radiusInMeters,
       nearby: {
         center: null,
-        radiusInMeters: 5000,
+        radiusInMeters,
         results: []
       }
-    }),
+    })),
+  setNearby: (nearby) => set({ nearby }),
+  clearNearby: () =>
+    set((state) => ({
+      nearby: {
+        center: null,
+        radiusInMeters: state.radiusInMeters,
+        results: []
+      }
+    })),
   initializeFilters: (bounds) =>
     set({
       filterBounds: bounds,
       filters: {
         byggeaar: bounds.byggeaar,
         energibruk_kwh_m2: bounds.energibruk_kwh_m2,
-        energikarakter: 'all',
-        oppvarmingskarakter: 'all'
+        energikarakter: [],
+        oppvarmingskarakter: 'all',
+        certificateScheme: 'all'
       }
     }),
   updateRange: (key, value) =>
@@ -78,8 +120,9 @@ export const useStore = create((set) => ({
       filters: {
         byggeaar: state.filterBounds.byggeaar,
         energibruk_kwh_m2: state.filterBounds.energibruk_kwh_m2,
-        energikarakter: 'all',
-        oppvarmingskarakter: 'all'
+        energikarakter: [],
+        oppvarmingskarakter: 'all',
+        certificateScheme: 'all'
       }
     }))
 }));

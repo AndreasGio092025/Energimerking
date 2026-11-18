@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { Search, X } from 'lucide-react';
 import { useStore } from '../store/useStore.js';
 import '../styles/searchbar.css';
 
-function SearchBar({ sidebarOpen, suggestions, onSuggestionSelect, onToggleSidebar, onToggleTheme }) {
-  const theme = useStore((state) => state.theme);
+function SearchBar({
+  suggestions,
+  hasData,
+  onSuggestionSelect
+}) {
   const searchQuery = useStore((state) => state.searchQuery);
   const setSearchQuery = useStore((state) => state.setSearchQuery);
   const [open, setOpen] = useState(false);
@@ -20,67 +23,77 @@ function SearchBar({ sidebarOpen, suggestions, onSuggestionSelect, onToggleSideb
   }, []);
 
   const visibleSuggestions = useMemo(() => suggestions.slice(0, 7), [suggestions]);
+  const suggestionLocation = (feature) => (
+    [
+      feature.properties.poststed,
+      feature.properties.kommunenavn
+    ].filter(Boolean).join(' | ') || 'Sted ikke registrert'
+  );
+  const selectSuggestion = (feature) => {
+    onSuggestionSelect(feature);
+    setOpen(false);
+  };
 
   return (
     <div className="search-layout">
       <div className="search-left">
-        <button type="button" className="chrome-button icon-button" onClick={onToggleSidebar} aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}>
-          {sidebarOpen ? 'X' : '='}
-        </button>
-
         <div className="search-wrapper" ref={wrapperRef}>
-          <div className="search-shell">
-            <span className="search-icon">S</span>
+          <div className={`search-shell ${hasData ? '' : 'is-disabled'}`}>
+            <Search className="search-input-icon" aria-hidden="true" strokeWidth={2.2} />
             <input
               type="text"
+              aria-label="Søk etter bygg"
               value={searchQuery}
+              disabled={!hasData}
               onChange={(event) => {
                 setSearchQuery(event.target.value);
                 setOpen(true);
               }}
               onFocus={() => setOpen(true)}
-              placeholder="Search by adresse, poststed, or kommunenavn"
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  setOpen(false);
+                  event.currentTarget.blur();
+                }
+
+                if (event.key === 'Enter' && visibleSuggestions.length > 0) {
+                  selectSuggestion(visibleSuggestions[0]);
+                }
+              }}
+              placeholder={hasData ? 'Søk på adresse, poststed eller kommunenavn' : 'Ingen byggdata er lastet inn'}
             />
             {searchQuery && (
-              <button type="button" className="inline-ghost" onClick={() => {
+              <button type="button" className="inline-ghost search-clear-button" aria-label="Tøm søket" onClick={() => {
                 setSearchQuery('');
                 setOpen(false);
               }}>
-                Clear
+                <X aria-hidden="true" strokeWidth={2.2} />
               </button>
             )}
           </div>
 
-          <AnimatePresence>
-            {open && searchQuery.trim() && (
-              <motion.div className="suggestions-panel" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}>
+          {open && searchQuery.trim() && (
+              <div className="suggestions-panel" role="listbox" aria-label="Søkeforslag">
                 {visibleSuggestions.length > 0 ? (
                   visibleSuggestions.map((feature) => (
-                    <button key={feature.id} type="button" className="suggestion-item" onClick={() => {
-                      onSuggestionSelect(feature);
-                      setOpen(false);
-                    }}>
+                    <button key={feature.id} type="button" className="suggestion-item" role="option" onClick={() => selectSuggestion(feature)}>
                       <span className="suggestion-dot" />
                       <span className="suggestion-copy">
-                        <strong>{feature.properties.adresse || 'Unknown address'}</strong>
-                        <small>
-                          {feature.properties.poststed || 'Unknown place'} | {feature.properties.kommunenavn || 'Unknown municipality'}
-                        </small>
+                        <strong>{feature.properties.adresse || 'Ukjent adresse'}</strong>
+                        <small>{suggestionLocation(feature)}</small>
                       </span>
                     </button>
                   ))
+                ) : hasData ? (
+                  <div className="suggestions-empty">Fant ingen bygg som passer.</div>
                 ) : (
-                  <div className="suggestions-empty">No matching buildings found.</div>
+                  <div className="suggestions-empty">Ingen byggdata er tilgjengelig å søke i.</div>
                 )}
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
         </div>
-      </div>
 
-      <button type="button" className="chrome-button" onClick={onToggleTheme}>
-        {theme === 'dark' ? 'Light mode' : 'Dark mode'}
-      </button>
+      </div>
     </div>
   );
 }

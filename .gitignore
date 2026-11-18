@@ -482,3 +482,15 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Grunndata (dump, CSV o.l.) deles direkte, ikke via Git. Bare .gitkeep holder mappen i repoet.
+Backend/Docker/Data/*
+!Backend/Docker/Data/.gitkeep
+
+# Claude Code: automatisk agentlogg
+docs/logg/aktivitet.log
+
+# Claude Code: personlige filer (hooken kjører bare hos den som har satt den opp)
+.claude/settings.local.json
+.claude/hooks/
+.claude/worktrees/

@@ -5,7 +5,7 @@ namespace Core.Models;
 
 public partial class Bygning
 {
-    public string Bygningsnummer { get; set; } = null!;
+    public string? Bygningsnummer { get; set; }
 
     public long EiendomId { get; set; }
 
@@ -17,7 +17,9 @@ public partial class Bygning
 
     public int? Seksjonsnummer { get; set; }
 
+    public long BygningId { get; set; }
+
     public virtual Eiendom Eiendom { get; set; } = null!;
 
-    public virtual ICollection<Energimerke> Energimerkes { get; set; } = new List<Energimerke>();
+    public virtual ICollection<EiendomBygning> EiendomBygnings { get; set; } = new List<EiendomBygning>();
 }

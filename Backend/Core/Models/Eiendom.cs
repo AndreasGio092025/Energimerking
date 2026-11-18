@@ -29,7 +29,15 @@ public partial class Eiendom
 
     public long? Coordinateid { get; set; }
 
+    public string? Lokalid { get; set; }
+
+    public string? Brukenhetsnummer { get; set; }
+
     public virtual ICollection<Bygning> Bygnings { get; set; } = new List<Bygning>();
+
+    public virtual Coordinate? Coordinate { get; set; }
+
+    public virtual ICollection<EiendomBygning> EiendomBygnings { get; set; } = new List<EiendomBygning>();
 
     public virtual Kommune KommunenummerNavigation { get; set; } = null!;
 }

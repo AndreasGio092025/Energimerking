@@ -1,0 +1,2 @@
+# Skall-skript kjøres i Linux-containeren og må ha LF-linjeskift (ellers feiler #!/bin/bash på \r).
+*.sh text eol=lf
