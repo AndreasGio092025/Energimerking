@@ -294,7 +294,7 @@ function enhetPopupHtml(properties) {
           <strong>${escapeHtml(energyGrade)}</strong>
         </div>
       </div>
-      ${samme > 1 ? `<div class="marker-popup-same-point">${samme} enheter her</div>` : ""}
+      ${samme > 1 ? `<div class="marker-popup-same-point">Antall enheter her: ${samme}</div>` : ""}
       <div class="marker-popup-snapshot" aria-label="Oppsummering av enheten">
         ${markerPopupMetric("Beregnet levert energi", energyText, POPUP_HELP.energyUse)}
         ${markerPopupMetric("Byggeår", properties.byggeaar, POPUP_HELP.built)}
@@ -2235,7 +2235,7 @@ function MapView({
         {viewMode !== "tiles" && <MapLegend heatmapStats={heatmapData.stats} />}
         {viewMode === "tiles" && (
           <div className="map-pill">
-            Viser {enkelVisning === "bygg" ? "bygg (median for enhetene)" : "enheter"},{" "}
+            Viser {enkelVisning === "bygg" ? "ett punkt per bygg (median for enhetene)" : "ett punkt per enhet"},{" "}
             {ordningLabel(enkelOrdning).toLowerCase()}
           </div>
         )}
