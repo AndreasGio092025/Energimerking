@@ -17,6 +17,9 @@
 -- VIKTIG: kjør   SELECT refresh_enheter_kart();   etter HVER import av attester. Den kjører
 -- refresh_bygg_oversikt() først (07) og deretter viewet i denne filen, i riktig rekkefølge.
 -- Kjører du bare refresh_bygg_oversikt(), blir kartpunktene stående på forrige import.
+-- Merk: 10_enkel_bygg_tiles.sql redefinerer refresh_enheter_kart() (samme navn) slik at den også
+-- oppdaterer mv_enhet_bygg_punkt, som bygger på mv_enhet_punkt. Kjører du 08 på nytt, må du først
+-- droppe det viewet og kjøre 10 etterpå (se toppen av 10).
 
 -- ---------------------------------------------------------------------------------------------
 -- 0. Salt til punkt-id
