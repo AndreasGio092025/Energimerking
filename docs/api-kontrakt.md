@@ -76,10 +76,10 @@ Ordningene blandes aldri; hver rad gjelder bare attester i den ordningen.
 Frontend skal vise byggets `karakterfordeling` (antall enheter per karakter) synlig sammen med medianen, så spredningen i bygget ikke skjules.
 
 ## Vektor-tiles for «Enkel bygg», per enhet og per bygg (`GET /tiles/{z}/{x}/{y}.pbf`)
-Status: godkjent av eieren 2026-11-17. Erstatter den gamle tile-kontrakten (under) når den er levert.
+Status: godkjent av eieren 2026-11-17, levert 2026-11-19. Erstatter den gamle attest-kontrakten for tiles.
 
-Kilde: ny SQL-funksjon i `Backend/Docker/db-init/` bygget på `mv_enhet_punkt` (siste attest per enhet og ordning,
-samme kartpunkt som `api/enheter`). Den gamle `custom_ST_GetPoints` og attest-tilene fjernes.
+Kilde: `enkel_bygg_tile(z, x, y, visning, ordning)` i `Backend/Docker/db-init/10_enkel_bygg_tiles.sql`, bygget på
+`mv_enhet_punkt` (siste attest per enhet og ordning, samme kartpunkt som `api/enheter`).
 
 Query-parametre (samme rute som før):
 
@@ -121,35 +121,17 @@ Punktet er midtpunktet av byggets enhetspunkter. Bygg uten enheter i ordningen e
 | `antall_enheter` | heltall | enheter | Enheter i bygget med siste attest i ordningen. |
 | `median_karakter` | tekst | A–G | Midterste energikarakter når enhetene sorteres A→G; ved partall antall den dårligste av de to midterste. |
 | `median_kwh_m2` | desimaltall eller null | kWh/m² per år | Median beregnet levert energi over enhetene, én desimal. |
-| `bygningskategori` | tekst eller null | – | Fra siste attest, som i bygg-oversikten. |
-| `byggeaar` | heltall eller null | år | Null hvis ukjent. |
-| `kohort` | tekst eller null | – | Fra `byggeaar_kohort()`. |
+| `bygningskategori` | tekst eller null | – | Fra byggets siste attest **innen valgt ordning** (eieren 2026-11-19). |
+| `byggeaar` | heltall eller null | år | Som `bygningskategori`: siste attest innen ordningen. Null hvis ukjent. |
+| `kohort` | tekst eller null | – | Fra `byggeaar_kohort()`. Samme gruppe som byggets enheter i laget `enheter` (samme ordning). |
 
 Frontend viser `antall_enheter` i popup («Median for N enheter»), så det er tydelig at tallet gjelder enheter og ikke én attest.
 
-## Vektor-tiles, gammel versjon (`GET /tiles/{z}/{x}/{y}.pbf`)
-Status: godkjent av eieren 2026-11-15. **Erstattes** av kontrakten over.
+Kategori og byggeår i laget `bygg` kan avvike fra bygg-siden (`bygg_oversikt_json`), som bruker siste attest på tvers av ordningene.
 
-Kilde: `custom_ST_GetPoints(z, x, y)` i `Backend/Docker/db-init/03_tile_functions.sql`,
-som leser `denorm_matrikkel_og_enova_oslo` (Oslo, attester fra 2025).
-
-- Format: Mapbox Vector Tile (`application/vnd.mapbox-vector-tile`), ett lag: `points` (punkter).
-- Zoom: tom tile (HTTP 204) under zoom 10. Ugyldig `z/x/y` gir HTTP 400.
-- Tak: maks 5000 punkter per tile under zoom 13, ellers 8000. Punkter over taket faller bort (sortert på `id`).
-- Én rad per attest, ikke per enhet (se "Enheter vs attester" i `CLAUDE.md`).
-
-| Felt | Type | Enhet | Betydning |
-|------|------|-------|-----------|
-| `id` | heltall | – | Radens id i `denorm_matrikkel_og_enova_oslo`. Brukes til `GET api/bygg/GetTilePointDetails?id=` for popup. |
-| `adresse` | tekst | – | Gateadresse fra matrikkelen. |
-| `attestNr` | tekst | – | Attestnummer fra Enova. |
-| `materialvalg` | tekst | – | Hovedmateriale i bygget (f.eks. "Tre"). Kan mangle. |
-| `byggeaar` | heltall | år | Byggeår. 0 og år før 1800 betyr ukjent. |
-| `gard` | heltall | – | Gårdsnummer i matrikkelen. |
-| `bruksenhetsNr` | tekst | – | Bruksenhetsnummer (f.eks. "H0101"). Kan mangle. |
-| `energikarakter` | tekst | A–G | Energikarakter på attesten. |
-| `oppvarmingskarakter` | tekst | farge | `Green`, `Lightgreen`, `Yellow`, `Orange` eller `Red`. Merk stavemåten `Lightgreen`. |
-| `energy` | desimaltall | kWh/m² per år | Beregnet levert energi totalt per kvadratmeter. |
+Den gamle tile-kontrakten (`custom_ST_GetPoints`, laget `points` med én rad per attest og popup fra
+`GetTilePointDetails`) er fjernet 2026-11-19; se git-historikken. `GetTilePointDetails` og `GetBoundsDeNormGeoJson`
+finnes fortsatt i `CoordinateController.cs`, men brukes ikke av frontend og fjernes som egen jobb.
 
 ## Enheter i kartet (`api/enheter`)
 Status: godkjent av eieren 2026-11-17.
