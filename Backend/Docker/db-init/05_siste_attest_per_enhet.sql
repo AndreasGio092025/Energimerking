@@ -16,9 +16,9 @@
 -- Mot en database der 07 og 08 allerede er installert FEILER DROP nedenfor (uten CASCADE), fordi
 -- mv_lignende_fordeling, mv_lignende_enheter og mv_enhet_punkt (og mv_enhet_punkt_oversikt under
 -- den) er bygget på viewet. Da må de droppes først:
---   DROP MATERIALIZED VIEW IF EXISTS mv_enhet_punkt_oversikt, mv_enhet_punkt,
+--   DROP MATERIALIZED VIEW IF EXISTS mv_enhet_bygg_punkt, mv_enhet_punkt_oversikt, mv_enhet_punkt,
 --       mv_lignende_enheter, mv_lignende_fordeling;
--- og deretter kjøres 05, 07 og 08 på nytt i den rekkefølgen. (07 og 08 dropper og bygger sine
+-- og deretter kjøres 05, 07, 08 og 10 på nytt i den rekkefølgen. (07 og 08 dropper og bygger sine
 -- egne views selv.) Funksjonene i 07/08 er uberørt av DROP og lages på nytt av filene.
 
 DROP MATERIALIZED VIEW IF EXISTS mv_siste_attest_per_enhet;
