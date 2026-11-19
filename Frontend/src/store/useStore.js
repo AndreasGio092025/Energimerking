@@ -58,7 +58,18 @@ export const useStore = create((set) => ({
   setBydelDisplayMode: (bydelDisplayMode) => set({ bydelDisplayMode }),
   setOrdning: (ordning) => set({ ordning, selectedFeature: null }),
   setEnkelVisning: (enkelVisning) => set({ enkelVisning }),
-  setEnkelOrdning: (enkelOrdning) => set({ enkelOrdning }),
+  // Bytter brukeren ordning i «Enkel bygg», nullstilles filtrene så gammel og ny ordning aldri blandes.
+  setEnkelOrdning: (enkelOrdning) =>
+    set((state) => ({
+      enkelOrdning,
+      filters: {
+        byggeaar: state.filterBounds.byggeaar,
+        energibruk_kwh_m2: state.filterBounds.energibruk_kwh_m2,
+        energikarakter: [],
+        oppvarmingskarakter: 'all',
+        certificateScheme: 'all'
+      }
+    })),
   setPunktInfo: (punktInfo) => set({ punktInfo }),
   setSelectedBydelId: (selectedBydelId) => set({ selectedBydelId, selectedFeature: null }),
   toggleNearbySearch: () =>

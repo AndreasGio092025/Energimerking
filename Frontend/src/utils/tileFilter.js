@@ -11,28 +11,24 @@ const FELT = {
   bygg: { karakter: 'median_karakter', energi: 'median_kwh_m2' }
 };
 
-function innenforEllerUkjent(felt, [min, max]) {
-  return [
-    'any',
-    ['!', ['has', felt]],
-    ['all', ['>=', ['get', felt], min], ['<=', ['get', felt], max]]
-  ];
-}
-
-function sammeOmraade(valgt, grenser) {
-  return Array.isArray(valgt) && Array.isArray(grenser) && valgt[0] === grenser[0] && valgt[1] === grenser[1];
+// En glidebryter som står helt ute i kanten gir en åpen grense (ingen filtrering på den siden).
+// Glidebryterens ytterpunkter kommer fra bydelsdataene, men tilene dekker hele Oslo.
+function innenforEllerUkjent(felt, [min, max], [boundMin, boundMax]) {
+  const grenser = [];
+  if (Number.isFinite(min) && min > boundMin) grenser.push(['>=', ['get', felt], min]);
+  if (Number.isFinite(max) && max < boundMax) grenser.push(['<=', ['get', felt], max]);
+  if (grenser.length === 0) return null;
+  return ['any', ['!', ['has', felt]], ['all', ...grenser]];
 }
 
 export function buildTileFilter(visning, ordning, filters, filterBounds) {
   const felt = FELT[visning] || FELT.enheter;
   const vilkaar = [];
 
-  if (!sammeOmraade(filters.byggeaar, filterBounds.byggeaar)) {
-    vilkaar.push(innenforEllerUkjent('byggeaar', filters.byggeaar));
-  }
-  if (!sammeOmraade(filters.energibruk_kwh_m2, filterBounds.energibruk_kwh_m2)) {
-    vilkaar.push(innenforEllerUkjent(felt.energi, filters.energibruk_kwh_m2));
-  }
+  const byggeaar = innenforEllerUkjent('byggeaar', filters.byggeaar, filterBounds.byggeaar);
+  if (byggeaar) vilkaar.push(byggeaar);
+  const energi = innenforEllerUkjent(felt.energi, filters.energibruk_kwh_m2, filterBounds.energibruk_kwh_m2);
+  if (energi) vilkaar.push(energi);
 
   const karakterer = Array.isArray(filters.energikarakter)
     ? filters.energikarakter

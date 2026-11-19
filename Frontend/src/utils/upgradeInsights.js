@@ -10,7 +10,7 @@ const KOHORT_HOY = ['før 1949', '1949–1969', '1970–1986'];
 const KOHORT_MIDDELS = ['1987–1996', '1997–2006'];
 const KOHORT_LAV = ['2007–2016', '2017 og senere'];
 
-const VALID_HEATING_GRADES = new Set(['GREEN', 'YELLOW', 'ORANGE', 'RED']);
+const VALID_HEATING_GRADES = new Set(['GREEN', 'LIGHTGREEN', 'YELLOW', 'ORANGE', 'RED']);
 
 const UNIT_NUMBER_KEYS = [
   'bruksenhetsNr',
