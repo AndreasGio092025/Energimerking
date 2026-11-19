@@ -4,6 +4,12 @@ const CURRENT_ANALYSIS_YEAR = 2026;
 const STALE_CERTIFICATE_YEAR = CURRENT_ANALYSIS_YEAR - 10;
 
 const VALID_ENERGY_GRADES = new Set(['A', 'B', 'C', 'D', 'E', 'F', 'G']);
+// Byggeårskohortene fra byggeaar_kohort() i Backend/Docker/db-init/06_kohort.sql, uendret.
+// Grensene står bare der. Her bestemmes bare hvor høyt hver kohort rangeres, og det er ingen årstall i nettleseren.
+const KOHORT_HOY = ['før 1949', '1949–1969', '1970–1986'];
+const KOHORT_MIDDELS = ['1987–1996', '1997–2006'];
+const KOHORT_LAV = ['2007–2016', '2017 og senere'];
+
 const VALID_HEATING_GRADES = new Set(['GREEN', 'YELLOW', 'ORANGE', 'RED']);
 
 const UNIT_NUMBER_KEYS = [
@@ -121,13 +127,15 @@ export function buildUpgradeInsights(properties = {}) {
   const heatingGrade = normalizeGrade(properties.oppvarmingskarakter);
   const energyUse = toNumber(properties.energibruk_kwh_m2 ?? properties.beregnetLevertEnergiTotaltkWhm2);
   const buildYear = toNumber(properties.byggeaar);
+  const kohort = hasValue(properties.kohort) ? String(properties.kohort).trim() : '';
   const certificateYear = certificateYearFromProperties(properties);
   const unitNumber = firstValue(properties, UNIT_NUMBER_KEYS);
 
   const hasEnergyGrade = VALID_ENERGY_GRADES.has(energyGrade);
   const hasHeatingGrade = VALID_HEATING_GRADES.has(heatingGrade);
   const hasEnergyUse = Number.isFinite(energyUse) && energyUse > 0;
-  const hasBuildYear = Number.isFinite(buildYear) && buildYear > 0;
+  // Uten kohort (byggeår mangler eller er ugyldig) regnes byggeåret som manglende.
+  const hasBuildYear = [...KOHORT_HOY, ...KOHORT_MIDDELS, ...KOHORT_LAV].includes(kohort);
   const hasCertificateYear = Number.isFinite(certificateYear);
 
   const drivers = [];
@@ -171,13 +179,13 @@ export function buildUpgradeInsights(properties = {}) {
 
   if (!hasBuildYear) {
     drivers.push(driver('missing', 'Byggeår mangler', 'Aldersrelatert risiko for bygningskroppen kan ikke vurderes.'));
-  } else if (buildYear < 1987) {
-    drivers.push(driver('high', `Byggeår ${Math.round(buildYear)}`, 'Eldre byggeår øker prioriteten for kontroll av bygningskroppen.'));
+  } else if (KOHORT_HOY.includes(kohort)) {
+    drivers.push(driver('high', `Bygget ${kohort}`, 'Eldre bygg øker prioriteten for kontroll av bygningskroppen.'));
     addRecommendation(recommendations, 'Undersøk varmetap gjennom tak, vegger, vinduer og gulv før kostbare endringer i tekniske anlegg.');
-  } else if (buildYear < 2010) {
-    drivers.push(driver('medium', `Byggeår ${Math.round(buildYear)}`, 'Alderen kan fortsatt tilsi målrettede kontroller av bygningskroppen.'));
+  } else if (KOHORT_MIDDELS.includes(kohort)) {
+    drivers.push(driver('medium', `Bygget ${kohort}`, 'Alderen kan fortsatt tilsi målrettede kontroller av bygningskroppen.'));
   } else {
-    drivers.push(driver('low', `Byggeår ${Math.round(buildYear)}`, 'Nyere byggeår gir lavere aldersrelatert prioritet.'));
+    drivers.push(driver('low', `Bygget ${kohort}`, 'Nyere bygg gir lavere aldersrelatert prioritet.'));
   }
 
   if (!hasCertificateYear) {
@@ -209,6 +217,7 @@ export function buildUpgradeInsights(properties = {}) {
       { label: 'Oppvarmingskarakter', value: hasHeatingGrade ? (heatingGradeName(heatingGrade)) : 'Mangler', missing: !hasHeatingGrade },
       { label: 'Beregnet levert energi', value: formatEnergyUse(energyUse), missing: !hasEnergyUse },
       { label: 'Byggeår', value: formatBuildYear(buildYear), missing: !hasBuildYear },
+      { label: 'Byggeårsgruppe', value: hasBuildYear ? kohort : 'Mangler', missing: !hasBuildYear },
       { label: 'Attestår', value: hasCertificateYear ? String(certificateYear) : 'Ukjent dato', missing: !hasCertificateYear },
       { label: 'Ordning', value: properties.certificateSchemeLabel || properties.certificateScheme || 'Ukjent', missing: !hasValue(properties.certificateSchemeLabel || properties.certificateScheme) },
       { label: 'Materialvalg', value: properties.materialvalg || 'Ikke registrert', missing: !hasValue(properties.materialvalg) },

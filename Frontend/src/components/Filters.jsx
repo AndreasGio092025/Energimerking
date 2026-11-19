@@ -4,7 +4,7 @@ import { fetchBydelStats, fetchEnhetStatistikk } from '../services/api.js';
 import { useStore } from '../store/useStore.js';
 import { BYDEL_DISPLAY_MODES, MAP_VIEW_MODES, heatingGradeName } from '../utils/constants.js';
 import { OSLO_BYDELER, findBydel } from '../utils/osloBydeler.js';
-import { ORDNINGER, ordningLabel } from '../utils/enheter.js';
+import { ENKEL_VISNINGER, ORDNINGER, ordningLabel } from '../utils/enheter.js';
 
 function RangeField({ label, min, max, value, onChange, suffix = '', step = 1, tooltip = '' }) {
   const [draftValue, setDraftValue] = useState(value);
@@ -151,6 +151,10 @@ const HEATING_GRADE_ORDER = {
   ORANGE: 2,
   RED: 3
 };
+
+// «Enkel bygg» henter punktene fra tiles og ikke fra bydelsdataene, så valgene står fast her.
+const TILE_ENERGY_GRADES = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+const TILE_HEATING_GRADES = ['Green', 'LightGreen', 'Yellow', 'Orange', 'Red'];
 
 const FILTER_MODE_ICONS = {
   markers: MapPin,
@@ -353,6 +357,10 @@ function Filters() {
   const selectedBydel = findBydel(selectedBydelId);
   const ordning = useStore((state) => state.ordning);
   const setOrdning = useStore((state) => state.setOrdning);
+  const enkelVisning = useStore((state) => state.enkelVisning);
+  const setEnkelVisning = useStore((state) => state.setEnkelVisning);
+  const enkelOrdning = useStore((state) => state.enkelOrdning);
+  const setEnkelOrdning = useStore((state) => state.setEnkelOrdning);
   const [omradeStats, setOmradeStats] = useState(null);
   const [omradeStatus, setOmradeStatus] = useState('idle');
   const omradeStatsCache = useRef(new Map());
@@ -431,6 +439,9 @@ function Filters() {
   }, [selectedBydelId]);
 
   const energyGrades = useMemo(() => {
+    if (viewMode === 'tiles') {
+      return TILE_ENERGY_GRADES.map((grade) => ({ grade, meaning: ENERGY_GRADE_MEANINGS[grade] }));
+    }
     const values = new Set();
     allFeatures.forEach((feature) => {
       const grade = feature.properties.energikarakter;
@@ -442,16 +453,20 @@ function Filters() {
         grade,
         meaning: ENERGY_GRADE_MEANINGS[grade] || 'registrert karakter'
       }));
-  }, [allFeatures]);
+  }, [allFeatures, viewMode]);
 
   const heatingGrades = useMemo(() => {
+    if (viewMode === 'tiles') {
+      // Bare enheter i gammel ordning har oppvarmingskarakter. Byggene og ny ordning har ingen.
+      return enkelVisning === 'enheter' && enkelOrdning === 'gammel' ? TILE_HEATING_GRADES : [];
+    }
     const values = new Set();
     allFeatures.forEach((feature) => {
       const grade = feature.properties.oppvarmingskarakter;
       if (grade) values.add(grade);
     });
     return Array.from(values).sort(compareHeatingGrades);
-  }, [allFeatures]);
+  }, [allFeatures, viewMode, enkelVisning, enkelOrdning]);
 
   const selectedEnergyGrades = Array.isArray(filters.energikarakter)
     ? filters.energikarakter
@@ -501,6 +516,51 @@ function Filters() {
             })}
           </div>
         </div>
+        {viewMode === 'tiles' && (
+          <div className="bydel-panel">
+            <div className="section-heading">
+              <div>
+                <div className="section-kicker">Enkel bygg</div>
+              </div>
+            </div>
+            <div className="section-kicker ordning-kicker">Hva hvert punkt viser</div>
+            <div className="bydel-display-toggle" role="group" aria-label="Velg om kartet viser enheter eller bygg">
+              {ENKEL_VISNINGER.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  className={`bydel-display-button ${enkelVisning === item.value ? 'active' : ''}`}
+                  onClick={() => setEnkelVisning(item.value)}
+                  aria-pressed={enkelVisning === item.value}
+                >
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+            <div className="bydel-stat-note">
+              {enkelVisning === 'bygg'
+                ? 'Hvert punkt er ett bygg. Karakteren er medianen (den midterste) over byggets enheter.'
+                : 'Hvert punkt er én enhet, for eksempel en leilighet. Den viser enhetens siste energiattest.'}
+            </div>
+            <div className="section-kicker ordning-kicker">Energimerkeordning</div>
+            <div className="bydel-display-toggle" role="group" aria-label="Velg energimerkeordning">
+              {ORDNINGER.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  className={`bydel-display-button ${enkelOrdning === item.value ? 'active' : ''}`}
+                  onClick={() => setEnkelOrdning(item.value)}
+                  aria-pressed={enkelOrdning === item.value}
+                >
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+            <div className="bydel-stat-note">
+              Gammel og ny ordning bruker ulike karakterskalaer og vises derfor aldri sammen.
+            </div>
+          </div>
+        )}
         {viewMode === 'markers' && (
           <div className="bydel-panel">
             <div className="section-heading">
@@ -619,7 +679,11 @@ function Filters() {
             <div className="bydel-stat-note">
               {viewMode === 'upgrade'
                 ? `Filtrene gjelder punktene i kartet. Kartet viser ${ordningLabel('gammel').toLowerCase()} i denne visningen.`
-                : 'Filtrene gjelder punktene i kartet. De endrer ikke tallene i statistikken.'}
+                : viewMode === 'tiles'
+                  ? enkelVisning === 'bygg'
+                    ? 'Filtrene gjelder byggene i kartet. Energikarakter og beregnet levert energi er byggets median.'
+                    : 'Filtrene gjelder enhetene i kartet.'
+                  : 'Filtrene gjelder punktene i kartet. De endrer ikke tallene i statistikken.'}
             </div>
             <RangeField
               label="Byggeår"
