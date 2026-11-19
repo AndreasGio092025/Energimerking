@@ -84,6 +84,11 @@ function enheterFor(ordning) {
   return cache[ordning];
 }
 
+// Alle eksempelenheter i en ordning, med lat/lon, til eksempel-tilene i tiles-eksempel.js.
+export function eksempelEnheterRaa(ordning) {
+  return enheterFor(ordning);
+}
+
 function iSirkel(enheter, lat, lon, radius) {
   return enheter.filter((enhet) => meterFra(lat, lon, enhet.lat, enhet.lon) <= radius);
 }

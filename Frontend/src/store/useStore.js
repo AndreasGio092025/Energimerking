@@ -13,6 +13,9 @@ export const useStore = create((set) => ({
   viewMode: 'markers',
   bydelDisplayMode: 'clusters',
   ordning: 'gammel',
+  // Valg inne i «Enkel bygg»: eget, så det ikke laster om bydelsdataene.
+  enkelVisning: 'enheter',
+  enkelOrdning: 'gammel',
   punktInfo: { avkortet: false, antall: 0 },
   selectedBydelId: 'gamle-oslo',
   nearbySearchEnabled: false,
@@ -54,6 +57,8 @@ export const useStore = create((set) => ({
     )),
   setBydelDisplayMode: (bydelDisplayMode) => set({ bydelDisplayMode }),
   setOrdning: (ordning) => set({ ordning, selectedFeature: null }),
+  setEnkelVisning: (enkelVisning) => set({ enkelVisning }),
+  setEnkelOrdning: (enkelOrdning) => set({ enkelOrdning }),
   setPunktInfo: (punktInfo) => set({ punktInfo }),
   setSelectedBydelId: (selectedBydelId) => set({ selectedBydelId, selectedFeature: null }),
   toggleNearbySearch: () =>
