@@ -12,7 +12,7 @@
 --
 -- Bygger på:
 --   mv_enhet_punkt             ett punkt per enhet og ordning, geometry(Point, 25832) + GiST (08)
---   mv_siste_attest_per_enhet  byggets siste attest (kategori, byggeår), som bygg_oversikt_json (05)
+--   mv_siste_attest_per_enhet  byggets siste attest innen ordningen (kategori, byggeår) (05)
 --   byggeaar_kohort()          kohortgrensene (06); grensene gjentas ikke her
 --
 -- Personvern: tilene inneholder aldri attestnummer, bruksenhetsnummer eller enhet_id. Feltlisten
@@ -51,17 +51,21 @@
 -- adresse / antall_adresser: som «Innganger» i bygg_oversikt_json (trimmet, tomme utelatt), men per
 -- ordning: adressene til enhetene popupen faktisk viser. Første adresse alfabetisk (databasens kollasjon).
 --
--- bygningskategori / byggeaar: fra byggets SISTE attest på tvers av ordningene (høyeste
--- utstedelsestidspunkt, attestnummer som tie-break), identisk med bygg_oversikt_json. Attestene i et
--- bygg er ikke alltid enige (se 07), og vi trenger ÉN verdi per bygg; derfor er kategori og kohort
--- felles for gammel og ny ordning i samme bygg.
+-- bygningskategori / byggeaar / kohort: fra byggets siste attest INNEN ordningen (høyeste
+-- utstedelsestidspunkt, attestnummer som tie-break, begge innen samme ordning). Eierens beslutning
+-- 2026-11-19: bygg-laget skal vise samme byggeårsgruppe som enhetene i samme ordning. Tidligere ble
+-- siste attest valgt på tvers av ordningene, så et bygg med en ny attest (2026) med annet byggeår enn
+-- de gamle fikk 2026-verdien også i gammel-laget, og kohorten ble en annen enn enhetenes (509 bygg,
+-- 2,4 %). Nå velges én rad per (bygningsnummer, ordning), og ordningene blandes aldri.
+-- Bygg-siden (bygg_oversikt_json, 07) er bevisst uendret: den viser ett bygg på tvers av ordningene.
 DROP MATERIALIZED VIEW IF EXISTS mv_enhet_bygg_punkt;
 
 CREATE MATERIALIZED VIEW mv_enhet_bygg_punkt AS
 WITH siste AS (
-    SELECT DISTINCT ON (m.bygningsnummer) m.bygningsnummer, m.bygningskategori, m.byggeaar
+    SELECT DISTINCT ON (m.bygningsnummer, m.ordning)
+           m.bygningsnummer, m.ordning, m.bygningskategori, m.byggeaar
     FROM mv_siste_attest_per_enhet m
-    ORDER BY m.bygningsnummer, m.utstedt_tidspunkt DESC, m.attestnummer DESC
+    ORDER BY m.bygningsnummer, m.ordning, m.utstedt_tidspunkt DESC, m.attestnummer DESC
 ),
 g AS (
     SELECT
@@ -90,7 +94,7 @@ SELECT
     s.byggeaar,
     byggeaar_kohort(s.byggeaar) AS kohort
 FROM g
-JOIN siste s ON s.bygningsnummer = g.bygningsnummer
+JOIN siste s ON s.bygningsnummer = g.bygningsnummer AND s.ordning = g.ordning
 WHERE g.punkt IS NOT NULL;
 -- (cardinality / 2 er heltallsdivisjon i Postgres, altså floor for positive tall.)
 
