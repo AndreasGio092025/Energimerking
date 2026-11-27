@@ -72,7 +72,6 @@ Store beslutninger (datamodell, faglige tolkninger, valg som er dyre å endre) s
 
 ## Kjente åpne punkter
 - Live-databasen (`energimerke-db`) kjører fra `Documents\DockerEnergimerke`, ikke fra repoets `Backend/Docker`. Portene i `DockerEnergimerke\docker-compose.yaml` ble satt til `127.0.0.1` 2026-11-17 (sjekket: lytter bare på 127.0.0.1, se `docs/logg/2026-11-17-hovedsesjon-api-komprimering.md`). Flytt live til repoets compose som egen jobb hvis ønskelig (ta dump først, aldri `down -v`).
-- `WebApi.csproj` har `Microsoft.NET.Sdk.web` (liten w); må være `Web` for Linux.
 - Ubrukte attest-endepunkter `GetTilePointDetails` og `GetBoundsDeNormGeoJson` (`CoordinateController.cs`) og funksjonen `custom_ST_GetPoints` i live-DB fjernes som egen jobb (eieren 2026-11-19).
 - Popupen i kartet kan havne bak sidepanelet i smale vinduer (under 900 px). Trolig eldre enn «Enkel bygg» per enhet; sjekk og rett som egen jobb.
 - Tellehull (eieren 2026-11-17: la stå, se `docs/beslutninger.md`): 481 Oslo-attester fra 2025 (209 enheter) mangler i `denorm_matrikkel_og_enova_oslo` men finnes i `enova_raw`, og 62 attester i 2026 (8 enheter) har Knr «301» og fanges ikke av `knr = '0301'` i `04_attester.sql`.
