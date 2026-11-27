@@ -2,6 +2,14 @@
 
 Kort logg over valg som er viktige eller dyre å endre. Nyeste øverst.
 
+## 2026-11-19: «Enkel bygg» per bygg og aldersprioritet etter kohort (eieren)
+**Beslutning:**
+- Laget «Per bygg» i «Enkel bygg» henter bygningskategori og byggeår fra byggets siste attest **innen valgt ordning**, ikke på tvers av ordningene.
+- Oppgraderingsprioritet bruker `kohort` fra API-et: før 1987 (før 1949, 1949–1969, 1970–1986) gir høy aldersprioritet, 1987–1996 og 1997–2006 middels, 2007 og senere lav. Mangler kohort, regnes byggeår som ukjent.
+- Ubrukte attest-endepunkter (`GetTilePointDetails`, `GetBoundsDeNormGeoJson`) og `custom_ST_GetPoints` i live-DB fjernes som egen jobb.
+
+**Hvorfor:** Med siste attest på tvers fikk 509 bygg (2,4 %) en annen byggeårsgruppe i «Per bygg» enn enhetene deres i «Per enhet», og gammel ordning kunne vise byggeår fra en attest i ny ordning. Innen ordningen holder kartet ordningene helt adskilt; bygg-siden (`bygg_oversikt_json`) bruker fortsatt siste attest på tvers. Aldersprioritet etter kohort fjerner de egne årsgrensene i nettleseren (`< 1987`, `< 2010`); høy er uendret, mens bygg fra 2007–2009 flytter fra middels til lav fordi grensen nå følger forskriftsperioden 2007–2016.
+
 ## 2026-11-17: Kjente tellehull får stå (eieren)
 **Beslutning:** Tallene i appen er litt for lave, og det lar vi stå inntil videre. Det gjelder 2025 og 2026.
 - **2025 (gammel ordning):** CSV-fila fra Enova (`01012025_31122025.csv`, Knr 0301) har 126 844 attester og 108 316 enheter. Databasen har 126 363 attester og 108 107 enheter. Forskjellen er 481 attester som finnes i `enova_raw`, men ikke i `denorm_matrikkel_og_enova_oslo` (laget for hånd i pgAdmin). Mange er nye bygg med bygningsnummer 3001…, og netto mangler 209 enheter.

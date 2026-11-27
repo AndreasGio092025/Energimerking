@@ -7,6 +7,12 @@ export const ORDNINGER = [
   { value: 'ny', label: 'Ny ordning (fra 2026)' }
 ];
 
+// Valg i «Enkel bygg»: ett punkt per enhet eller ett per bygg. Verdiene er lagnavnene i tile-kontrakten.
+export const ENKEL_VISNINGER = [
+  { value: 'enheter', label: 'Per enhet' },
+  { value: 'bygg', label: 'Per bygg' }
+];
+
 export function ordningLabel(ordning) {
   return ORDNINGER.find((item) => item.value === ordning)?.label || '';
 }

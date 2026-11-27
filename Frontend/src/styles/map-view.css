@@ -18,6 +18,7 @@
   flex-direction: column;
   gap: 10px;
   align-items: flex-end;
+  max-width: calc(100% - 20px);
 }
 
 .map-pill,
@@ -26,6 +27,9 @@
 }
 
 .map-pill {
+  max-width: min(320px, 100%);
+  overflow-wrap: anywhere;
+  text-align: left;
   padding: 10px 12px;
   border-radius: 8px;
   font-size: 0.86rem;

@@ -46,6 +46,7 @@ export const LAYER_IDS = {
   heatmapPoints: 'buildings-heatmap-points',
   upgradePriorityPoints: 'upgrade-priority-points',
   energyTilePoints: 'energy-tile-points',
+  energyTileBygg: 'energy-tile-bygg',
   selectedHalo: 'selected-building-halo',
   selectedPoint: 'selected-building-point',
   nearby: 'nearby-layer',

@@ -2,17 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import { Flame, Layers, MapPin, TrendingUp } from "lucide-react";
 import "maplibre-gl/dist/maplibre-gl.css";
-import {
-  fetchBuildingsBoundsGeoJson,
-  fetchTilePointDetails,
-} from "../services/api.js";
+import { brukerEksempelData } from "../services/api.js";
 import { useStore } from "../store/useStore.js";
 import {
   buildFeatureCollection,
   buildNearbyCircleGeoJson,
   buildNearbyGeoJson,
 } from "../utils/geo.js";
-import { normalizeGeoJson } from "../utils/filtering.js";
+import { buildTileFilter } from "../utils/tileFilter.js";
 import { buildUpgradeInsights } from "../utils/upgradeInsights.js";
 import {
   DARK_MAP_STYLE_URL,
@@ -24,7 +21,7 @@ import {
   SOURCE_IDS,
   heatingGradeName,
 } from "../utils/constants.js";
-import { ordningLabel } from "../utils/enheter.js";
+import { ENKEL_VISNINGER, ordningLabel } from "../utils/enheter.js";
 import "../styles/map-view.css";
 
 function escapeHtml(value) {
@@ -56,25 +53,19 @@ function displayValue(value, fallback = "Ikke registrert") {
 const POPUP_HELP = {
   grade:
     "Energikarakteren går fra A til G. A er best og G er dårligst. Den bygger på beregnet levert energi per kvadratmeter per år ved normal bruk.",
-  unit: "Enhetsnummeret (bruksenhetsnummer) til enheten i bygget.",
   energyUse:
     "Beregnet levert energi per kvadratmeter per år ved normal bruk, vist i kWh/m² per år. Tallet er beregnet, ikke målt.",
   built: "Byggeåret som er registrert for bygget eller enheten.",
   address: "Den registrerte adressen til dette bygget eller denne enheten.",
-  municipality: "Navnet på kommunen, når det finnes.",
-  gard: "Gårdsnummer fra matrikkelen.",
-  bruk: "Bruksnummer fra matrikkelen.",
-  feste: "Festenummer fra matrikkelen, når det er registrert.",
-  andel: "Andelsnummer fra matrikkelen, når det er registrert.",
-  seksjon:
-    "Seksjonsnummer fra matrikkelen, ofte brukt for eierseksjoner.",
-  organisation:
-    "Organisasjonsnummer knyttet til den registrerte energiattesten, når det finnes.",
-  certificate: "Attestnummeret til energiattesten, fra Enova.",
   issued: "Datoen energiattesten ble utstedt.",
   heatingGrade:
     "Oppvarmingskarakteren er skalaen fra rød til grønn for oppvarmingssystemet i bygget. Grønn er best, og den er uavhengig av energikarakteren.",
-  material: "Registrert materialvalg eller byggeinformasjon, når det finnes.",
+  cohort:
+    "Bygg fra samme tidsrom er bygget etter de samme byggereglene. Gruppen brukes når bygg sammenlignes med lignende bygg.",
+  medianGrade:
+    "Medianen er den midterste karakteren når byggets enheter settes i rekkefølge fra A til G. Er det like mange på hver side, brukes den dårligste av de to midterste.",
+  medianEnergy:
+    "Den midterste verdien av beregnet levert energi for enhetene i bygget, i kWh/m² per år. Tallet er beregnet, ikke målt.",
 };
 
 function popupHelp(text) {
@@ -139,75 +130,6 @@ function markerPopupDetail(label, value, tooltip = "") {
 
 function firstPopulated(...values) {
   return values.find((value) => hasValue(value));
-}
-
-function popupHtml(properties) {
-  const address = escapeHtml(
-    displayValue(properties.adresse, "Ukjent adresse"),
-  );
-  const municipality = hasValue(properties.kommunenavn)
-    ? escapeHtml(properties.kommunenavn)
-    : "";
-  const energyGrade = displayValue(properties.energikarakter, "Mangler");
-  const energyGradeDisplay = escapeHtml(energyGrade);
-  const energyGradeClass = energyClass(energyGrade);
-  const energyUse =
-    properties.beregnetLevertEnergiTotaltkWhm2 ?? properties.energibruk_kwh_m2;
-  const unitNumber = firstPopulated(
-    properties.bruksenhetsNr,
-    properties.bruksenhetsnummer,
-    properties.BruksenhetsNr,
-    properties.Bruksenhetsnummer,
-    properties.brukenhetsnummer,
-    properties.brukenhetsNR,
-    properties.Brukenhetsnummer,
-    properties.BrukenhetsNR,
-  );
-
-  return `
-    <article class="popup-card marker-popup">
-      <div class="marker-popup-header">
-        <div class="marker-popup-heading">
-          <div class="marker-popup-meta">
-            <span class="marker-popup-kicker">Energiattest</span>
-            ${municipality ? `<span class="marker-popup-place">${municipality}</span>` : ""}
-          </div>
-          <h2 class="marker-popup-title">${address}</h2>
-        </div>
-        <div class="marker-popup-grade ${energyGradeClass}">
-          <span>Energikarakter</span>
-          <strong>${energyGradeDisplay}</strong>
-        </div>
-      </div>
-      <div class="marker-popup-snapshot" aria-label="Oppsummering av bygget">
-        ${markerPopupMetric("Enhet", unitNumber, POPUP_HELP.unit)}
-        ${markerPopupMetric("Beregnet levert energi", energyUse, POPUP_HELP.energyUse)}
-        ${markerPopupMetric("Byggeår", properties.byggeaar, POPUP_HELP.built)}
-      </div>
-      <div class="marker-popup-body">
-        <div class="marker-popup-section-title">Detaljer om attesten</div>
-        <div class="marker-popup-detail-list">
-          ${markerPopupDetail("Adresse", properties.adresse, POPUP_HELP.address)}
-          ${markerPopupDetail("Kommune", properties.kommunenavn, POPUP_HELP.municipality)}
-          ${markerPopupDetail("Gnr.", properties.gard)}
-          ${markerPopupDetail("Bnr.", properties.bruksnummer, POPUP_HELP.bruk)}
-          ${markerPopupDetail("Festenr.", properties.feste, POPUP_HELP.feste)}
-          ${markerPopupDetail("Andel", properties.andel, POPUP_HELP.andel)}
-          ${markerPopupDetail("Seksjon", properties.seksjon, POPUP_HELP.seksjon)}
-          ${markerPopupDetail("Organisasjonsnr.", properties.organisasjonsNr, POPUP_HELP.organisation)}
-          ${markerPopupDetail("Attestnummer", properties.attestnummer, POPUP_HELP.certificate)}
-          ${markerPopupDetail("Utstedt", properties.utstedelsesdato, POPUP_HELP.issued)}
-          ${markerPopupDetail("Oppvarmingskarakter", heatingGradeName(properties.oppvarmingskarakter), POPUP_HELP.heatingGrade)}
-          ${markerPopupDetail("Materialvalg", properties.materialvalg, POPUP_HELP.material)}
-        </div>
-      </div>
-      ${
-        hasValue(properties.attestnummer)
-          ? `<a class="popup-bygg-link" href="#/bygg-fra-attest/${encodeURIComponent(properties.attestnummer)}">Vis bygget</a>`
-          : ""
-      }
-    </article>
-  `;
 }
 
 function priorityClass(score) {
@@ -372,7 +294,7 @@ function enhetPopupHtml(properties) {
           <strong>${escapeHtml(energyGrade)}</strong>
         </div>
       </div>
-      ${samme > 1 ? `<div class="marker-popup-same-point">${samme} enheter her</div>` : ""}
+      ${samme > 1 ? `<div class="marker-popup-same-point">Antall enheter her: ${samme}</div>` : ""}
       <div class="marker-popup-snapshot" aria-label="Oppsummering av enheten">
         ${markerPopupMetric("Beregnet levert energi", energyText, POPUP_HELP.energyUse)}
         ${markerPopupMetric("Byggeår", properties.byggeaar, POPUP_HELP.built)}
@@ -382,9 +304,70 @@ function enhetPopupHtml(properties) {
         <div class="marker-popup-detail-list">
           ${markerPopupDetail("Ordning", ordning)}
           ${markerPopupDetail("Bygningskategori", properties.bygningskategori)}
-          ${markerPopupDetail("Byggeårsgruppe", properties.kohort)}
+          ${markerPopupDetail("Byggeårsgruppe", properties.kohort, POPUP_HELP.cohort)}
           ${markerPopupDetail("Attesten utstedt", properties.utstedelsesdato, POPUP_HELP.issued)}
           ${markerPopupDetail("Oppvarming", heating, POPUP_HELP.heatingGrade)}
+          ${markerPopupDetail("Bygningsnummer", properties.bygningsnummer)}
+        </div>
+      </div>
+      ${
+        hasValue(properties.bygningsnummer)
+          ? `<a class="popup-bygg-link" href="#/bygg/${encodeURIComponent(properties.bygningsnummer)}">Vis bygget</a>`
+          : ""
+      }
+    </article>
+  `;
+}
+
+function formatKwh(value) {
+  const number = Number(value);
+  return hasValue(value) && Number.isFinite(number)
+    ? `${number.toLocaleString("nb-NO", { maximumFractionDigits: 1 })} kWh/m² per år`
+    : null;
+}
+
+// Popup for ett bygg i «Enkel bygg, per bygg». Alle tall er medianer over byggets enheter
+// (siste energiattest per enhet i valgt ordning) og kommer ferdig regnet fra databasen.
+function byggPopupHtml(properties) {
+  const baseAddress = displayValue(properties.adresse, "Ukjent adresse");
+  const otherAddresses = Number(properties.antall_adresser) - 1;
+  const address = escapeHtml(
+    otherAddresses > 0
+      ? `${baseAddress} og ${otherAddresses === 1 ? "1 annen adresse" : `${otherAddresses} andre adresser`}`
+      : baseAddress,
+  );
+  const grade = displayValue(properties.median_karakter, "Mangler");
+  const unitCount = Number(properties.antall_enheter);
+  const unitText = Number.isFinite(unitCount)
+    ? `${unitCount.toLocaleString("nb-NO")} ${unitCount === 1 ? "enhet" : "enheter"}`
+    : "enhetene";
+
+  return `
+    <article class="popup-card marker-popup">
+      <div class="marker-popup-header">
+        <div class="marker-popup-heading">
+          <div class="marker-popup-meta">
+            <span class="marker-popup-kicker">Bygg, samlet for enhetene</span>
+          </div>
+          <h2 class="marker-popup-title">${address}</h2>
+        </div>
+        <div class="marker-popup-grade ${energyClass(grade)}" title="${escapeHtml(POPUP_HELP.medianGrade)}">
+          <span>Median</span>
+          <strong>${escapeHtml(grade)}</strong>
+        </div>
+      </div>
+      <div class="marker-popup-same-point">Median energikarakter ${escapeHtml(grade)} for ${escapeHtml(unitText)}</div>
+      <div class="marker-popup-snapshot" aria-label="Oppsummering av bygget">
+        ${markerPopupMetric("Median beregnet levert energi", formatKwh(properties.median_kwh_m2), POPUP_HELP.medianEnergy)}
+        ${markerPopupMetric("Byggeår", properties.byggeaar, POPUP_HELP.built)}
+      </div>
+      <div class="marker-popup-body">
+        <div class="marker-popup-section-title">Detaljer</div>
+        <div class="marker-popup-detail-list">
+          ${markerPopupDetail("Antall enheter", Number.isFinite(unitCount) ? unitCount.toLocaleString("nb-NO") : null)}
+          ${markerPopupDetail("Ordning", ordningLabel(properties.ordning))}
+          ${markerPopupDetail("Bygningskategori", properties.bygningskategori)}
+          ${markerPopupDetail("Byggeårsgruppe", properties.kohort, POPUP_HELP.cohort)}
           ${markerPopupDetail("Bygningsnummer", properties.bygningsnummer)}
         </div>
       </div>
@@ -401,74 +384,6 @@ function popupHtmlForMode(properties, mode) {
   return mode === "upgrade"
     ? upgradePopupHtml(properties)
     : enhetPopupHtml(properties);
-}
-
-// Vektor-tilene bruker egne feltnavn (energy, attestNr). Popupen leser
-// de vanlige navnene, så vi oversetter dem her før første visning.
-function tilePopupHtml(properties) {
-  const source = properties || {};
-  return popupHtml({
-    ...source,
-    energibruk_kwh_m2: source.energibruk_kwh_m2 ?? source.energy,
-    attestnummer: source.attestnummer ?? source.attestNr,
-  });
-}
-
-function tileDetailId(feature) {
-  const properties = feature?.properties || {};
-  return properties.denormId || properties.id || feature?.id || null;
-}
-
-function tileDetailFeatureFromPayloadForClick(payload, id, fallbackFeature) {
-  const normalized = normalizeGeoJson(payload);
-  const byId = findFeatureById(normalized.features, id);
-  if (byId) return byId;
-
-  const fallbackCoordinateKey = coordinateKey(fallbackFeature);
-  const fallbackAddress = String(fallbackFeature?.properties?.adresse || "")
-    .trim()
-    .toLowerCase();
-  const byCoordinateAndAddress = normalized.features.find(
-    (feature) =>
-      coordinateKey(feature) === fallbackCoordinateKey &&
-      (!fallbackAddress ||
-        String(feature.properties?.adresse || "")
-          .trim()
-          .toLowerCase() === fallbackAddress),
-  );
-
-  return byCoordinateAndAddress || normalized.features[0] || null;
-}
-
-async function fetchTileDetailPayload(feature, options = {}) {
-  const detailId = tileDetailId(feature);
-
-  if (detailId) {
-    try {
-      return await fetchTilePointDetails(detailId, options);
-    } catch (error) {
-      if (error?.name === "AbortError") throw error;
-    }
-  }
-
-  const [longitude, latitude] = feature?.geometry?.coordinates || [];
-  const lon = Number(longitude);
-  const lat = Number(latitude);
-
-  if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
-    return null;
-  }
-
-  return fetchBuildingsBoundsGeoJson(
-    {
-      minLatitude: lat - TILE_DETAIL_BOUNDS_PADDING_DEGREES,
-      minLongitude: lon - TILE_DETAIL_BOUNDS_PADDING_DEGREES,
-      maxLatitude: lat + TILE_DETAIL_BOUNDS_PADDING_DEGREES,
-      maxLongitude: lon + TILE_DETAIL_BOUNDS_PADDING_DEGREES,
-      amount: TILE_DETAIL_FALLBACK_AMOUNT,
-    },
-    options,
-  );
 }
 
 function idsMatch(left, right) {
@@ -945,9 +860,131 @@ function setLayerVisibility(map, layerId, visibility) {
 const MIN_TILE_ZOOM = 14;
 // Over 15 strekker kartet tilene fra zoom 15 (maks ca. 2800 bygg per tile) i stedet for å hente nye.
 const MAX_TILE_SOURCE_ZOOM = 15;
-const TILE_SOURCE_LAYER = "points";
-const TILE_DETAIL_BOUNDS_PADDING_DEGREES = 0.00008;
-const TILE_DETAIL_FALLBACK_AMOUNT = 250;
+
+// Tile-lagene i «Enkel bygg»: lagnavnet i tilene er det samme som valget («enheter» eller «bygg»).
+const TILE_LAYER_IDS = {
+  enheter: LAYER_IDS.energyTilePoints,
+  bygg: LAYER_IDS.energyTileBygg,
+};
+
+function tileUrl(visning, ordning) {
+  const parametre = `visning=${visning}&ordning=${ordning}`;
+  // Testdata (?eksempel=...) lages i nettleseren; ellers hentes ekte tiles fra API-et.
+  return brukerEksempelData()
+    ? `eksempeltiles://{z}/{x}/{y}?${parametre}`
+    : `${window.location.origin}/tiles/{z}/{x}/{y}.pbf?${parametre}`;
+}
+
+// Eksempeltilene lages av dev/tiles-eksempel.js, som først lastes når de trengs.
+let eksempelProtokollRegistrert = false;
+function registrerEksempelProtokoll() {
+  if (eksempelProtokollRegistrert || !brukerEksempelData()) return;
+  eksempelProtokollRegistrert = true;
+  maplibregl.addProtocol("eksempeltiles", async (params) => {
+    const { lagEksempelTile } = await import("../dev/tiles-eksempel.js");
+    return { data: lagEksempelTile(params.url) };
+  });
+}
+
+function energyPinExpression(gradeField) {
+  return [
+    "match",
+    ["get", gradeField],
+    "A",
+    "energy-pin-a",
+    "B",
+    "energy-pin-b",
+    "C",
+    "energy-pin-c",
+    "D",
+    "energy-pin-d",
+    "E",
+    "energy-pin-e",
+    "F",
+    "energy-pin-f",
+    "G",
+    "energy-pin-g",
+    "energy-pin-default",
+  ];
+}
+
+// Sørger for at kartet har riktig kilde og lag for valgt visning og ordning.
+// Endres valget, fjernes det gamle laget og kilden, og nye lages (kilden har ordning i adressen).
+function ensureTileLayers(map, visning, ordning) {
+  const key = `${visning}|${ordning}`;
+  const layerId = TILE_LAYER_IDS[visning];
+  if (
+    map.getSource(SOURCE_IDS.energyTiles) &&
+    map.getLayer(layerId) &&
+    map._energimerkingTileKey === key
+  ) {
+    return;
+  }
+
+  Object.values(TILE_LAYER_IDS).forEach((id) => {
+    if (map.getLayer(id)) map.removeLayer(id);
+  });
+  if (map.getSource(SOURCE_IDS.energyTiles)) {
+    map.removeSource(SOURCE_IDS.energyTiles);
+  }
+
+  registrerEksempelProtokoll();
+  map.addSource(SOURCE_IDS.energyTiles, {
+    type: "vector",
+    tiles: [tileUrl(visning, ordning)],
+    minzoom: MIN_TILE_ZOOM,
+    maxzoom: MAX_TILE_SOURCE_ZOOM,
+  });
+  map.addLayer(
+    {
+      id: layerId,
+      type: "symbol",
+      source: SOURCE_IDS.energyTiles,
+      "source-layer": visning,
+      layout: {
+        visibility:
+          useStore.getState().viewMode === "tiles" ? "visible" : "none",
+        "icon-image": energyPinExpression(
+          visning === "bygg" ? "median_karakter" : "energikarakter",
+        ),
+        "icon-size": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          10,
+          0.42,
+          14,
+          0.58,
+          18,
+          0.76,
+        ],
+        "icon-anchor": "bottom",
+        "icon-offset": [0, 3],
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true,
+      },
+    },
+    map.getLayer(LAYER_IDS.selectedHalo) ? LAYER_IDS.selectedHalo : undefined,
+  );
+  map._energimerkingTileKey = key;
+}
+
+// Setter kilde, lag og filter i «Enkel bygg» etter det som står i butikken akkurat nå.
+function applyTileState(map) {
+  if (!map?.getLayer(LAYER_IDS.selectedHalo)) return;
+
+  const { enkelVisning, enkelOrdning, filters, filterBounds } =
+    useStore.getState();
+  ensureTileLayers(map, enkelVisning, enkelOrdning);
+  map.setFilter(
+    TILE_LAYER_IDS[enkelVisning],
+    buildTileFilter(enkelVisning, enkelOrdning, filters, filterBounds),
+  );
+}
+
+function existingTileLayerIds(map) {
+  return Object.values(TILE_LAYER_IDS).filter((id) => map.getLayer(id));
+}
 
 function syncMapDataAndVisibility(
   map,
@@ -964,6 +1001,7 @@ function syncMapDataAndVisibility(
 ) {
   if (!map?.isStyleLoaded()) return;
 
+  applyTileState(map);
   map.getSource(SOURCE_IDS.buildings)?.setData(featureCollection);
   map.getSource(SOURCE_IDS.heatmapBuildings)?.setData(heatmapCollection);
   map.getSource(SOURCE_IDS.upgradeBuildings)?.setData(featureCollection);
@@ -1017,7 +1055,9 @@ function syncMapDataAndVisibility(
   setLayerVisibility(map, LAYER_IDS.heatmapLocations, heatmapVisibility);
   setLayerVisibility(map, LAYER_IDS.heatmapPoints, heatmapVisibility);
   setLayerVisibility(map, LAYER_IDS.upgradePriorityPoints, upgradeVisibility);
-  setLayerVisibility(map, LAYER_IDS.energyTilePoints, tileVisibility);
+  existingTileLayerIds(map).forEach((id) =>
+    setLayerVisibility(map, id, tileVisibility),
+  );
   setLayerVisibility(map, LAYER_IDS.nearbyCircle, nearbyCircleVisibility);
 }
 
@@ -1123,13 +1163,6 @@ function addMapLayers(map) {
   addSourceIfMissing(map, SOURCE_IDS.upgradeBuildings, {
     type: "geojson",
     data: buildFeatureCollection([]),
-  });
-
-  addSourceIfMissing(map, SOURCE_IDS.energyTiles, {
-    type: "vector",
-    tiles: [`${window.location.origin}/tiles/{z}/{x}/{y}.pbf`],
-    minzoom: MIN_TILE_ZOOM,
-    maxzoom: MAX_TILE_SOURCE_ZOOM,
   });
 
   addLayerIfMissing(map, {
@@ -1402,50 +1435,6 @@ function addMapLayers(map) {
     },
   });
 
-  addLayerIfMissing(map, {
-    id: LAYER_IDS.energyTilePoints,
-    type: "symbol",
-    source: SOURCE_IDS.energyTiles,
-    "source-layer": TILE_SOURCE_LAYER,
-    layout: {
-      visibility: "none",
-      "icon-image": [
-        "match",
-        ["get", "energikarakter"],
-        "A",
-        "energy-pin-a",
-        "B",
-        "energy-pin-b",
-        "C",
-        "energy-pin-c",
-        "D",
-        "energy-pin-d",
-        "E",
-        "energy-pin-e",
-        "F",
-        "energy-pin-f",
-        "G",
-        "energy-pin-g",
-        "energy-pin-default",
-      ],
-      "icon-size": [
-        "interpolate",
-        ["linear"],
-        ["zoom"],
-        10,
-        0.42,
-        14,
-        0.58,
-        18,
-        0.76,
-      ],
-      "icon-anchor": "bottom",
-      "icon-offset": [0, 3],
-      "icon-allow-overlap": true,
-      "icon-ignore-placement": true,
-    },
-  });
-
   addSourceIfMissing(map, SOURCE_IDS.selected, {
     type: "geojson",
     data: buildFeatureCollection([]),
@@ -1539,6 +1528,9 @@ function addMapLayers(map) {
       "fill-outline-color": "#ea4335",
     },
   });
+
+  const { enkelVisning, enkelOrdning } = useStore.getState();
+  ensureTileLayers(map, enkelVisning, enkelOrdning);
 }
 
 function MapView({
@@ -1555,7 +1547,6 @@ function MapView({
   const mapRef = useRef(null);
   const popupRef = useRef(null);
   const featuresRef = useRef(features);
-  const tileDetailControllerRef = useRef(null);
   const allFeatures = useStore((state) => state.allFeatures);
   const allFeaturesRef = useRef(allFeatures);
   const mapClickRef = useRef(onMapClick);
@@ -1567,6 +1558,10 @@ function MapView({
   const radiusInMeters = useStore((state) => state.radiusInMeters);
   const setSelectedFeature = useStore((state) => state.setSelectedFeature);
   const ordning = useStore((state) => state.ordning);
+  const enkelVisning = useStore((state) => state.enkelVisning);
+  const enkelOrdning = useStore((state) => state.enkelOrdning);
+  const filters = useStore((state) => state.filters);
+  const filterBounds = useStore((state) => state.filterBounds);
   const punktInfo = useStore((state) => state.punktInfo);
   const [zoomLevel, setZoomLevel] = useState(DEFAULT_ZOOM);
   const featureCollection = useMemo(
@@ -1851,63 +1846,22 @@ function MapView({
         );
       });
 
-      map.on("click", LAYER_IDS.energyTilePoints, async (event) => {
-        const feature = event.features?.[0];
-        if (!feature) return;
+      // Tilene har alt popupen trenger, så det hentes ingenting fra API-et ved klikk.
+      // Lagnavnet i tilen sier om punktet er en enhet eller et bygg.
+      Object.entries(TILE_LAYER_IDS).forEach(([visning, layerId]) => {
+        map.on("click", layerId, (event) => {
+          const feature = event.features?.[0];
+          if (!feature) return;
 
-        const coordinates = feature.geometry.coordinates.slice();
-        const fallbackProperties = feature.properties || {};
-        const detailId = tileDetailId(feature);
-
-        tileDetailControllerRef.current?.abort();
-        popupRef.current?.remove();
-        popupRef.current = openPopup(
-          map,
-          coordinates,
-          tilePopupHtml(fallbackProperties),
-        );
-
-        const controller = new AbortController();
-        tileDetailControllerRef.current = controller;
-
-        try {
-          const payload = await fetchTileDetailPayload(feature, {
-            signal: controller.signal,
-          });
-
-          if (
-            controller.signal.aborted ||
-            tileDetailControllerRef.current !== controller ||
-            viewModeRef.current !== "tiles"
-          ) {
-            return;
-          }
-
-          const detailFeature = tileDetailFeatureFromPayloadForClick(
-            payload,
-            detailId,
-            feature,
-          );
-          if (!detailFeature) return;
-
-          const detailCoordinates =
-            detailFeature.geometry?.coordinates?.slice() || coordinates;
-          setSelectedFeature(detailFeature);
           popupRef.current?.remove();
           popupRef.current = openPopup(
             map,
-            detailCoordinates,
-            tilePopupHtml(detailFeature.properties),
+            feature.geometry.coordinates.slice(),
+            visning === "bygg"
+              ? byggPopupHtml(feature.properties || {})
+              : enhetPopupHtml(feature.properties || {}),
           );
-        } catch (error) {
-          if (error?.name !== "AbortError") {
-            console.warn("Could not load tile point details.", error);
-          }
-        } finally {
-          if (tileDetailControllerRef.current === controller) {
-            tileDetailControllerRef.current = null;
-          }
-        }
+        });
       });
 
       // Add delegated click handler for unit selection at the document level
@@ -2034,12 +1988,11 @@ function MapView({
             LAYER_IDS.points,
             LAYER_IDS.heatmapPoints,
             LAYER_IDS.upgradePriorityPoints,
-            LAYER_IDS.energyTilePoints,
+            ...existingTileLayerIds(map),
             LAYER_IDS.nearby,
           ],
         });
         if (hits.length > 0) return;
-        tileDetailControllerRef.current?.abort();
         popupRef.current?.remove();
         popupRef.current = null;
         setSelectedFeature(null);
@@ -2056,7 +2009,7 @@ function MapView({
         LAYER_IDS.points,
         LAYER_IDS.heatmapPoints,
         LAYER_IDS.upgradePriorityPoints,
-        LAYER_IDS.energyTilePoints,
+        ...Object.values(TILE_LAYER_IDS),
         LAYER_IDS.nearby,
       ].forEach((layerId) => {
         map.on("mouseenter", layerId, () => {
@@ -2073,7 +2026,6 @@ function MapView({
     mapRef.current = map;
     return () => {
       popupRef.current?.remove();
-      tileDetailControllerRef.current?.abort();
       mapRef.current?._cleanup?.();
       map.off("zoom", updateZoomLevel);
       map.remove();
@@ -2151,12 +2103,19 @@ function MapView({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (viewMode === "tiles") {
-      ensureTilesMinZoom(map);
-    } else {
-      tileDetailControllerRef.current?.abort();
-    }
+    if (viewMode === "tiles") ensureTilesMinZoom(map);
   }, [ensureTilesMinZoom, viewMode]);
+
+  // Bytter kilde, lag og filter i «Enkel bygg» når valget eller filtrene endres.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    applyTileState(map);
+    existingTileLayerIds(map).forEach((id) =>
+      setLayerVisibility(map, id, viewMode === "tiles" ? "visible" : "none"),
+    );
+    if (viewMode === "tiles") popupRef.current?.remove();
+  }, [enkelVisning, enkelOrdning, filters, filterBounds, viewMode]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -2274,9 +2233,15 @@ function MapView({
       <div className="zoom-readout">Zoom {zoomLevel.toFixed(1)}</div>
       <div className="map-floating">
         {viewMode !== "tiles" && <MapLegend heatmapStats={heatmapData.stats} />}
+        {viewMode === "tiles" && (
+          <div className="map-pill">
+            Viser {enkelVisning === "bygg" ? "ett punkt per bygg (median for enhetene)" : "ett punkt per enhet"},{" "}
+            {ordningLabel(enkelOrdning).toLowerCase()}
+          </div>
+        )}
         {viewMode === "tiles" && zoomLevel < MIN_TILE_ZOOM && (
           <div className="map-pill is-hint">
-            Zoom inn for å se byggene
+            Zoom inn for å se {enkelVisning === "bygg" ? "byggene" : "enhetene"}
           </div>
         )}
         {(viewMode === "markers" || viewMode === "upgrade") && (
